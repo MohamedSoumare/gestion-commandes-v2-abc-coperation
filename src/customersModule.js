@@ -7,7 +7,7 @@ const customersModule = {
       const [rows] = await cnx.query('SELECT * FROM customers');
       return rows;
     } catch (error) {
-      console.error('Erreur lors de la récupération des clients:', error);
+      console.error('Error while retrieving clients:', error);
       throw error;
     }
   },
@@ -19,10 +19,10 @@ const customersModule = {
       if (rows.length > 0) {
         return rows[0];
       } else {
-        return null;
+        console.log('ID Customers not found');
       }
     } catch (error) {
-      console.error(`Erreur lors de la récupération du client avec ID ${id}:`, error);
+      console.error(`Erreur when retrieving the client with ID ${id}:`, error);
       throw error;
     }
   },
@@ -35,7 +35,7 @@ const customersModule = {
       );
       return result[0].insertId;
     } catch (error) {
-      console.error('Erreur lors de la création du client:', error);
+      console.error('Error while creating the client:', error);
       throw error;
     }
   },
@@ -48,7 +48,7 @@ const customersModule = {
       );
       return result[0].affectedRows;
     } catch (error) {
-      console.error(`Erreur lors de la mise à jour du client avec ID ${id}:`, error);
+      console.error(`Error while updating the client with ID ${id}:`, error);
       throw error;
     }
   },
@@ -58,7 +58,7 @@ const customersModule = {
       const result = await cnx.query('DELETE FROM customers WHERE id = ?', [id]);
       return result[0].affectedRows;
     } catch (error) {
-      console.error(`Erreur lors de la suppression du client avec ID ${id}:`, error);
+      console.error(`Error when deleting the client with ID ${id}:`, error);
       throw error;
     }
   },
