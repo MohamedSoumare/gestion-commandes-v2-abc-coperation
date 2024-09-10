@@ -1,0 +1,15 @@
+{
+  "name": "app-gestion-order",
+  "version": "1.0.0",
+  "description": "Allows to manage the orders of customers.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mohamed Bakary Soumare",
+  "license": "ISC",
+  "dependencies": {
+    "mysql2": "^3.11.1",
+    "readline-sync": "^1.4.10"
+  }
+}
