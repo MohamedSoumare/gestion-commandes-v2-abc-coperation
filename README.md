@@ -1,6 +1,7 @@
 # Gestion de Commandes ABC-Cooeration
 
-Ce projet est un système de gestion de commandes développé en Node.js avec une base de données MySQL. Il permet de gérer des clients, des produits, des commandes et des paiements.
+## Description
+ABC Corporation est une entreprise spécialisée dans l'importation et l'exportation de produits. Dans le cadre de la modernisation et de l'optimisation de la gestion de ses activités, l'entreprise souhaite à nouveau mettre en place un système de gestion des commandes développé en Node.js, avec une base de données MySQL. Ce système permettra de gérer les clients, les produits, les commandes et les paiements.
 
 ## Prérequis
 
@@ -25,8 +26,8 @@ Ce projet est un système de gestion de commandes développé en Node.js avec un
    ```
 
 4. Configurez la base de données :
-   - Créez une base de données MySQL nommée `gestion_commandes`
-   - Importez le schéma de la base de données à partir du fichier `database/schema.sql`
+   - Créez une base de données MySQL nommée `abc_orders_mangement`
+   - Importez le schéma de la base de données à partir du fichier `database/order_mangement.sql`
 
 5. Configurez les paramètres de connexion à la base de données :
    - Ouvrez le fichier `database/db.js`

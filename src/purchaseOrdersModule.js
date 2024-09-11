@@ -29,7 +29,7 @@ const purchaseOrdersModule = {
       console.error(`Error retrieving purchase order with ID ${id}:`, error);
       throw new Error(`Unable to retrieve purchase order with ID ${id}.`);
     }
-  },
+},
 
   async create(data) {
     try {
@@ -66,10 +66,14 @@ const purchaseOrdersModule = {
   },
 
   async update(id, order) {
+    let connection;
     try {
+      connection = await cnx.getConnection();
+      await connection.beginTransaction();
+
       const { date, customer_id, delivery_address, track_number, status } = order;
 
-      const [result] = await cnx.query(
+      const [result] = await connection.query(
         'UPDATE purchase_orders SET date = ?, customer_id = ?, delivery_address = ?, track_number = ?, status = ? WHERE id = ?',
         [date, customer_id, delivery_address, track_number, status, id]
       );
@@ -78,10 +82,59 @@ const purchaseOrdersModule = {
         throw new Error(`Purchase order with ID ${id} not found.`);
       }
 
-      return result.affectedRows; // Returns the number of affected rows
+      // Update order details if necessary
+      if (order.order_details && order.order_details.length > 0) {
+        for (const detail of order.order_details) {
+          if (detail.id) {
+            // Update an existing detail
+            await connection.query(
+              'UPDATE order_details SET product_id = ?, quantity = ?, price = ? WHERE id = ? AND order_id = ?',
+              [detail.product_id, detail.quantity, detail.price, detail.id, id]
+            );
+          } else {
+            // Adding a new detail
+            await connection.query(
+              'INSERT INTO order_details (product_id, quantity, price, order_id) VALUES (?, ?, ?, ?)',
+              [detail.product_id, detail.quantity, detail.price, id]
+            );
+          }
+        }
+      }
+
+      await connection.commit();
+      return result.affectedRows;
     } catch (error) {
+      if (connection) await connection.rollback();
       console.error(`Error updating purchase order with ID ${id}:`, error);
       throw new Error(`Unable to update purchase order with ID ${id}. Please check your input.`);
+    } finally {
+      if (connection) connection.release();
+    }
+  },
+
+  async getOrderDetails(orderId) {
+    try {
+      const [rows] = await cnx.query('SELECT * FROM order_details WHERE order_id = ?', [orderId]);
+      return rows;
+    } catch (error) {
+      console.error(`Error retrieving order details for order ID ${orderId}:`, error);
+      throw new Error(`Unable to retrieve order details for order ID ${orderId}.`);
+    }
+  },
+
+  async updateOrderDetail(detailId, data) {
+    try {
+      const [result] = await cnx.query(
+        'UPDATE order_details SET product_id = ?, quantity = ?, price = ? WHERE id = ?',
+        [data.product_id, data.quantity, data.price, detailId]
+      );
+      if (result.affectedRows === 0) {
+        throw new Error(`Order detail with ID ${detailId} not found.`);
+      }
+      return result.affectedRows;
+    } catch (error) {
+      console.error(`Error updating order detail with ID ${detailId}:`, error);
+      throw new Error(`Unable to update order detail with ID ${detailId}. Please check your input.`);
     }
   },
 

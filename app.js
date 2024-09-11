@@ -300,12 +300,77 @@ async function handlePurchaseOrders() {
         const order = await purchaseOrdersModule.getById(parseInt(orderIdGet));
         console.log(order ? 'Order:' : 'No order found.', order);
         break;
-      case '4':
-        const orderIdUpdate = await question('ID of the order to edit: ');
-        const updatedOrderData = await getPurchaseOrderInput();
-        const updatedOrder = await purchaseOrdersModule.update(parseInt(orderIdUpdate), updatedOrderData);
-        console.log(updatedOrder > 0 ? 'Order successfully updated.' : 'No order found.');
-        break;
+        case '4':
+          const orderIdUpdate = await question('ID of the order to edit: ');
+          let updatedOrderData = await getPurchaseOrderInput();
+          
+          let editingDetails = true;
+          while (editingDetails) {
+            
+            console.log('\n--- Edit Order Details Menu ---');
+            console.log('1. View current order details');
+            console.log('2. Add new order detail');
+            console.log('3. Edit existing order detail');
+            console.log('4. Save and exit');
+            console.log('5. Exit without saving');
+  
+            const detailChoice = await question('Choose an option: ');
+  
+            switch (detailChoice) {
+              case '1':
+                const currentDetails = await purchaseOrdersModule.getOrderDetails(orderIdUpdate);
+                console.log('Current Order Details:', currentDetails);
+                break;
+              case '2':
+                const newDetail = await getOrderDetailInput(orderIdUpdate);
+                if (newDetail) {
+                  if (!updatedOrderData.order_details) {
+                    updatedOrderData.order_details = [];
+                  }
+                  updatedOrderData.order_details.push(newDetail);
+                  console.log('New order detail added.');
+                }
+                break;
+              case '3':
+                const detailIdToEdit = await question('ID of the order detail to edit: ');
+                const updatedDetail = await getOrderDetailInput(orderIdUpdate);
+                if (updatedDetail) {
+                  updatedDetail.id = parseInt(detailIdToEdit);
+                  if (!updatedOrderData.order_details) {
+                    updatedOrderData.order_details = [];
+                  }
+                  updatedOrderData.order_details.push(updatedDetail);
+                  console.log('Order detail updated.');
+                }
+                break;
+              case '4':
+                editingDetails = false;
+                break;
+              case '5':
+                editingDetails = false;
+                updatedOrderData = null;
+                break;
+              default:
+                console.log('Invalid option. Please try again.');
+            }
+          }
+          
+          if (updatedOrderData) {
+            try {
+              const updatedOrder = await purchaseOrdersModule.update(parseInt(orderIdUpdate), updatedOrderData);
+              console.log('Order successfully updated.');
+            } catch (error) {
+              console.error('Error updating order:', error.message);
+              if (error.message.includes('Customer with ID')) {
+                console.log('Please make sure the customer exists before updating the order.');
+              }
+            }
+          } else {
+            console.log('Order update cancelled.');
+          }
+          break;
+
+
       case '5':
         const orderIdDelete = await question('ID of the order to delete: ');
         const deletedOrder = await purchaseOrdersModule.delete(parseInt(orderIdDelete));
