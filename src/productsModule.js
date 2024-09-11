@@ -14,7 +14,11 @@ const productsModule = {
 async getById(id) {
     try {
       const [rows] = await cnx.query('SELECT * FROM products WHERE id = ?', [id]);
-      return rows.length > 0 ? rows[0] : null; // Retourne null si le produit n'est pas trouvé
+      if (rows.length > 0) {
+        return rows[0];
+      } else {
+        console.log('ID Products not found');
+      }
     } catch (error) {
       console.error('Erreur lors de la récupération du produit:', error);
       throw error;

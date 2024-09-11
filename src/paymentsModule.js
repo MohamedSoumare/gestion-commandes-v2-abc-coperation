@@ -14,7 +14,11 @@ const paymentsModule = {
   async getById(id) {
     try {
       const [rows] = await cnx.query('SELECT * FROM payments WHERE id = ?', [id]);
-      return rows.length > 0 ? rows[0] : null; // Retourne null si aucun paiement n'est trouvé
+      if (rows.length > 0) {
+        return rows[0];
+      } else {
+        console.log('ID payments not found');
+      }
     } catch (error) {
       console.error(`Erreur lors de la récupération du paiement avec l'ID ${id}:`, error);
       throw error;
