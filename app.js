@@ -75,6 +75,7 @@ async function getPurchaseOrderInput() {
   };
 }
 
+// Function to collect order detail data
 async function getOrderDetailInput(orderId) {
   const product_id = await question('Product ID: ');
   const product = await productsModule.getById(parseInt(product_id));
@@ -282,9 +283,12 @@ async function handlePurchaseOrders() {
               break;
             case '2':
               addingDetails = false;
+              console.log('Order saved successfully.');
               break;
             case '3':
               addingDetails = false;
+              await purchaseOrdersModule.delete(orderId);
+              console.log('Order creation cancelled.');
               break;
             default:
               console.log('Invalid option. Please try again.');

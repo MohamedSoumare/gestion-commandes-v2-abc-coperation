@@ -2,7 +2,7 @@ const cnx = require('../database/db');
 
 const customersModule = {
 
-  async getAll() {
+async getAll() {
     try {
       const [rows] = await cnx.query('SELECT * FROM customers');
       return rows;
@@ -10,9 +10,9 @@ const customersModule = {
       console.error('Error while retrieving customers:', error);
       throw new Error('Unable to retrieve customers. Please try again later.');
     }
-  },
+},
 
-  async getById(id) {
+async getById(id) {
     try {
       const [rows] = await cnx.query('SELECT * FROM customers WHERE id = ?', [id]);
       if (rows.length > 0) {
@@ -24,9 +24,9 @@ const customersModule = {
       console.error(`Error when retrieving the customer with ID ${id}:`, error);
       throw new Error(`Unable to retrieve the customer with ID ${id}.`);
     }
-  },
+},
 
-  async create(data) {
+async create(data) {
     try {
       const [result] = await cnx.query(
         'INSERT INTO customers (name, address, email, phone) VALUES (?, ?, ?, ?)',
@@ -39,7 +39,7 @@ const customersModule = {
     }
   },
 
-  async update(id, data) {
+async update(id, data) {
     try {
       const [result] = await cnx.query(
         'UPDATE customers SET name = ?, address = ?, email = ?, phone = ? WHERE id = ?',
@@ -53,9 +53,9 @@ const customersModule = {
       console.error(`Error while updating the customer with ID ${id}:`, error);
       throw new Error(`Unable to update customer with ID ${id}. Please check your input.`);
     }
-  },
+},
 
-  async delete(id) {
+async delete(id) {
     try {
       const [result] = await cnx.query('DELETE FROM customers WHERE id = ?', [id]);
       if (result.affectedRows === 0) {
