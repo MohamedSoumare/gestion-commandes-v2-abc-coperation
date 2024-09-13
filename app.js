@@ -257,14 +257,15 @@ async function handleProducts() {
 // Order management
 async function handlePurchaseOrders() {
   let orderManaging = true;
-  let currentOrder = null; // Stocke temporairement la commande
-  let orderDetails = [];   // Stocke temporairement les détails de la commande
+  let currentOrder = null; // Temporarily stores the order
+  let orderDetails = [];   // Temporarily stores order details
 
   while (orderManaging) {
     const choice = await showOrderMenu();
 
     switch (choice) {
-      case '1': // Créer une nouvelle commande
+      case '1': // Create new order
+
         const orderData = await getPurchaseOrderInput();
         const customerExists = await customersModule.getById(orderData.customer_id);
         if (!customerExists) {
@@ -272,8 +273,8 @@ async function handlePurchaseOrders() {
           break;
         }
 
-        currentOrder = orderData; // Stockage temporaire des données de commande
-        orderDetails = []; // Réinitialise les détails de commande
+        currentOrder = orderData; // Temporary storage of order data
+        orderDetails = []; // Reset the order details
 
         console.log('Les données de la commande sont temporairement enregistrées. Vous pouvez maintenant ajouter des détails.');
 
@@ -286,24 +287,25 @@ async function handlePurchaseOrders() {
           const detailChoice = await question('Choisissez une option: ');
 
           switch (detailChoice) {
-            case '1': // Ajouter un détail de commande
+            case '1': // Add order detail
               const orderDetail = await getOrderDetailInput();
               if (orderDetail) {
-                orderDetails.push(orderDetail); // Ajoute le détail dans le tableau temporaire
+                orderDetails.push(orderDetail); // Adds detail in temporary table
                 console.log('Détail de commande ajouté en mémoire.');
               }
               break;
 
-            case '2': // Sauvegarder dans la base de données
+            case '2': // Save to database
+
               if (currentOrder) {
                 try {
-                  // Sauvegarder la commande d'abord
+                 // Save the order first
                   const orderId = await purchaseOrdersModule.create(currentOrder);
                   console.log('Commande sauvegardée avec succès dans la base de données. ID:', orderId);
 
-                  // Sauvegarder les détails de commande dans la base de données
+                  // Save order details in database
                   for (const detail of orderDetails) {
-                    detail.order_id = orderId; // Assigne l'ID de la commande à chaque détail
+                    detail.order_id = orderId; // Assigns the order ID to each detail
                     await purchaseOrdersModule.addOrderDetail(detail);
                   }
                   console.log('Détails de commande sauvegardés avec succès.');
@@ -316,8 +318,8 @@ async function handlePurchaseOrders() {
               addingDetails = false;
               break;
 
-            case '3': // Quitter sans sauvegarder
-              currentOrder = null; // Réinitialiser les données de commande temporaire
+            case '3': // Exit without saving
+              currentOrder = null; // Reset temporary command data
               orderDetails = [];   // Réinitialiser les détails de commande temporaires
               console.log('Création de commande annulée.');
               addingDetails = false;
@@ -356,12 +358,12 @@ async function handlePurchaseOrders() {
           const detailChoice = await question('Choisissez une option : ');
 
           switch (detailChoice) {
-            case '1': // Afficher les détails actuels de la commande
+            case '1': // View current order details
               const currentDetails = await purchaseOrdersModule.getOrderDetails(orderIdUpdate);
               console.log('Détails de la commande actuelle :', currentDetails);
               break;
 
-            case '2': // Ajouter un nouveau détail de commande
+            case '2': // Add new order detai
               const newDetail = await getOrderDetailInput(orderIdUpdate);
               if (newDetail) {
                 if (!updatedOrderData.order_details) {
@@ -372,7 +374,7 @@ async function handlePurchaseOrders() {
               }
               break;
 
-            case '3': // Modifier un détail existant
+            case '3': // Edit an existing detail
               const detailIdToEdit = await question('ID du détail à modifier : ');
               const updatedDetail = await getOrderDetailInput(orderIdUpdate);
               if (updatedDetail) {
@@ -385,13 +387,13 @@ async function handlePurchaseOrders() {
               }
               break;
 
-            case '4': // Sauvegarder les modifications
+            case '4': // Save the changes
               editingDetails = false;
               break;
 
-            case '5': // Quitter sans sauvegarder
+            case '5': // Exit without saving
               editingDetails = false;
-              updatedOrderData = null; // Annuler les modifications
+              updatedOrderData = null; // Undo changes
               break;
 
             default:
