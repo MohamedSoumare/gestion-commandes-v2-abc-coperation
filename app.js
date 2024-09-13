@@ -61,18 +61,20 @@ async function getProductInput() {
 
 // Function to collect order data
 async function getPurchaseOrderInput() {
-  const date = new Date();  
+ 
+  const date = await question('Date order (YYYY-MM-DD) : ');
   const customer_id = await question('Customer ID: ');
   const delivery_address = await question('Delivery address: ');
   const track_number = await question('Tracking number: ');
   const status = await question('Status: ');
   return {
-    date,  
-    customer_id: parseInt(customer_id),  
+    date,
+    customer_id: parseInt(customer_id),
     delivery_address,
     track_number,
     status
   };
+  
 }
 
 // Function to collect order detail data
@@ -82,11 +84,14 @@ async function getOrderDetailInput(orderId) {
 
   if (!product) {
     console.log("Product ID not found.");
+    
   }
 
-  console.log(`Order Price: ${product.price}\n`);  
+  console.log(`Order Price: ${product.price}\n`);
+  
   const quantity = await question('Quantity: ');
 
+  // Ensure quantity is a valid number and greater than zero
   if (isNaN(quantity) || parseInt(quantity) <= 0) {
     console.log("Invalid quantity. Please enter a valid number.");
   }
@@ -101,7 +106,7 @@ async function getOrderDetailInput(orderId) {
 
 // Function to collect payment data
 async function getPaymentInput() {
-  const date = new Date();
+  const date = await question('Date payment (YYYY-MM-DD) :');
   const amount = await question('Amount: ');
   const payment_method = await question('Payment method: ');
   const order_id = await question('Order ID: ');
@@ -252,139 +257,172 @@ async function handleProducts() {
 // Order management
 async function handlePurchaseOrders() {
   let orderManaging = true;
+  let currentOrder = null; // Stocke temporairement la commande
+  let orderDetails = [];   // Stocke temporairement les détails de la commande
+
   while (orderManaging) {
     const choice = await showOrderMenu();
+
     switch (choice) {
-      case '1':
-        // Create a new order
+      case '1': // Créer une nouvelle commande
         const orderData = await getPurchaseOrderInput();
         const customerExists = await customersModule.getById(orderData.customer_id);
+        if (!customerExists) {
+          console.log("Client introuvable. Veuillez d'abord créer le client.");
+          break;
+        }
 
-        const orderId = await purchaseOrdersModule.create(orderData);
-        console.log('Order successfully created. ID:', orderId);
+        currentOrder = orderData; // Stockage temporaire des données de commande
+        orderDetails = []; // Réinitialise les détails de commande
 
-        // Add details to the order
+        console.log('Les données de la commande sont temporairement enregistrées. Vous pouvez maintenant ajouter des détails.');
+
         let addingDetails = true;
         while (addingDetails) {
-          console.log('\n--- Order Details Menu ---');
-          console.log('1. Add order detail');
-          console.log('2. Save and exit');
-          console.log('3. Exit without saving');
-
-          const detailChoice = await question('Choose an option: ');
+          console.log('\n--- Menu des Détails de la Commande ---');
+          console.log('1. Ajouter un détail de commande');
+          console.log('2. Sauvegarder et quitter');
+          console.log('3. Quitter sans sauvegarder');
+          const detailChoice = await question('Choisissez une option: ');
 
           switch (detailChoice) {
-            case '1':
-              const orderDetail = await getOrderDetailInput(orderId);
+            case '1': // Ajouter un détail de commande
+              const orderDetail = await getOrderDetailInput();
               if (orderDetail) {
-                await purchaseOrdersModule.addOrderDetail(orderDetail);
-                console.log('Order detail successfully added.');
+                orderDetails.push(orderDetail); // Ajoute le détail dans le tableau temporaire
+                console.log('Détail de commande ajouté en mémoire.');
               }
               break;
-            case '2':
+
+            case '2': // Sauvegarder dans la base de données
+              if (currentOrder) {
+                try {
+                  // Sauvegarder la commande d'abord
+                  const orderId = await purchaseOrdersModule.create(currentOrder);
+                  console.log('Commande sauvegardée avec succès dans la base de données. ID:', orderId);
+
+                  // Sauvegarder les détails de commande dans la base de données
+                  for (const detail of orderDetails) {
+                    detail.order_id = orderId; // Assigne l'ID de la commande à chaque détail
+                    await purchaseOrdersModule.addOrderDetail(detail);
+                  }
+                  console.log('Détails de commande sauvegardés avec succès.');
+                } catch (error) {
+                  console.error('Erreur lors de la sauvegarde de la commande ou des détails :', error);
+                }
+              } else {
+                console.log('Aucune commande à sauvegarder.');
+              }
               addingDetails = false;
-              console.log('Order saved successfully.');
               break;
-            case '3':
+
+            case '3': // Quitter sans sauvegarder
+              currentOrder = null; // Réinitialiser les données de commande temporaire
+              orderDetails = [];   // Réinitialiser les détails de commande temporaires
+              console.log('Création de commande annulée.');
               addingDetails = false;
-              await purchaseOrdersModule.delete(orderId);
-              console.log('Order creation cancelled.');
               break;
+
             default:
-              console.log('Invalid option. Please try again.');
+              console.log('Option invalide. Veuillez réessayer.');
           }
         }
         break;
-      case '2':
-        const orders = await purchaseOrdersModule.getAll();
-        console.log('Orders:', orders);
-        break;
-      case '3':
-        const orderIdGet = await question('ID of the order to view: ');
-        const order = await purchaseOrdersModule.getById(parseInt(orderIdGet));
-        console.log(order ? 'Order:' : 'No order found.', order);
-        break;
-        case '4':
-          const orderIdUpdate = await question('ID of the order to edit: ');
-          let updatedOrderData = await getPurchaseOrderInput();
-          
-          let editingDetails = true;
-          while (editingDetails) {
-            
-            console.log('\n--- Edit Order Details Menu ---');
-            console.log('1. View current order details');
-            console.log('2. Add new order detail');
-            console.log('3. Edit existing order detail');
-            console.log('4. Save and exit');
-            console.log('5. Exit without saving');
-  
-            const detailChoice = await question('Choose an option: ');
-  
-            switch (detailChoice) {
-              case '1':
-                const currentDetails = await purchaseOrdersModule.getOrderDetails(orderIdUpdate);
-                console.log('Current Order Details:', currentDetails);
-                break;
-              case '2':
-                const newDetail = await getOrderDetailInput(orderIdUpdate);
-                if (newDetail) {
-                  if (!updatedOrderData.order_details) {
-                    updatedOrderData.order_details = [];
-                  }
-                  updatedOrderData.order_details.push(newDetail);
-                  console.log('New order detail added.');
-                }
-                break;
-              case '3':
-                const detailIdToEdit = await question('ID of the order detail to edit: ');
-                const updatedDetail = await getOrderDetailInput(orderIdUpdate);
-                if (updatedDetail) {
-                  updatedDetail.id = parseInt(detailIdToEdit);
-                  if (!updatedOrderData.order_details) {
-                    updatedOrderData.order_details = [];
-                  }
-                  updatedOrderData.order_details.push(updatedDetail);
-                  console.log('Order detail updated.');
-                }
-                break;
-              case '4':
-                editingDetails = false;
-                break;
-              case '5':
-                editingDetails = false;
-                updatedOrderData = null;
-                break;
-              default:
-                console.log('Invalid option. Please try again.');
-            }
-          }
-          
-          if (updatedOrderData) {
-            try {
-              const updatedOrder = await purchaseOrdersModule.update(parseInt(orderIdUpdate), updatedOrderData);
-              console.log('Order successfully updated.');
-            } catch (error) {
-              console.error('Error updating order:', error.message);
-              if (error.message.includes('Customer with ID')) {
-                console.log('Please make sure the customer exists before updating the order.');
-              }
-            }
-          } else {
-            console.log('Order update cancelled.');
-          }
-          break;
 
+        case '2': 
+        const orders = await purchaseOrdersModule.getAll(); 
+        console.log('Commandes:', orders);
+        break;
+
+      case '3': 
+        const orderId = await question('ID de la commande à voir: ');
+        const order = await purchaseOrdersModule.getById(parseInt(orderId));
+        console.log(order ? 'Commande:' : 'Aucune commande trouvée.', order);
+        break;
+
+      case '4': // Modifier une commande
+        const orderIdUpdate = await question('ID de la commande à modifier : ');
+        let updatedOrderData = await getPurchaseOrderInput();
+
+        let editingDetails = true;
+        while (editingDetails) {
+          console.log('\n--- Menu de Modification des Détails de la Commande ---');
+          console.log('1. Voir les détails actuels');
+          console.log('2. Ajouter un nouveau détail');
+          console.log('3. Modifier un détail existant');
+          console.log('4. Sauvegarder et quitter');
+          console.log('5. Quitter sans sauvegarder');
+
+          const detailChoice = await question('Choisissez une option : ');
+
+          switch (detailChoice) {
+            case '1': // Afficher les détails actuels de la commande
+              const currentDetails = await purchaseOrdersModule.getOrderDetails(orderIdUpdate);
+              console.log('Détails de la commande actuelle :', currentDetails);
+              break;
+
+            case '2': // Ajouter un nouveau détail de commande
+              const newDetail = await getOrderDetailInput(orderIdUpdate);
+              if (newDetail) {
+                if (!updatedOrderData.order_details) {
+                  updatedOrderData.order_details = [];
+                }
+                updatedOrderData.order_details.push(newDetail);
+                console.log('Nouveau détail de commande ajouté.');
+              }
+              break;
+
+            case '3': // Modifier un détail existant
+              const detailIdToEdit = await question('ID du détail à modifier : ');
+              const updatedDetail = await getOrderDetailInput(orderIdUpdate);
+              if (updatedDetail) {
+                updatedDetail.id = parseInt(detailIdToEdit);
+                if (!updatedOrderData.order_details) {
+                  updatedOrderData.order_details = [];
+                }
+                updatedOrderData.order_details.push(updatedDetail);
+                console.log('Détail de commande mis à jour.');
+              }
+              break;
+
+            case '4': // Sauvegarder les modifications
+              editingDetails = false;
+              break;
+
+            case '5': // Quitter sans sauvegarder
+              editingDetails = false;
+              updatedOrderData = null; // Annuler les modifications
+              break;
+
+            default:
+              console.log('Option invalide. Veuillez réessayer.');
+          }
+        }
+
+        if (updatedOrderData) {
+          try {
+            const updatedOrder = await purchaseOrdersModule.update(parseInt(orderIdUpdate), updatedOrderData);
+            console.log('Commande mise à jour avec succès.');
+          } catch (error) {
+            console.error('Erreur lors de la mise à jour de la commande :', error.message);
+          }
+        } else {
+          console.log('Modification de la commande annulée.');
+        }
+        break;
 
       case '5':
-        const orderIdDelete = await question('ID of the order to delete: ');
-        const deletedOrder = await purchaseOrdersModule.delete(parseInt(orderIdDelete));
-        console.log(deletedOrder > 0 ? 'Order successfully deleted.' : 'No order found.');
-        break;
-      case '6':
+          const orderIdDelete = await question('ID of the order to delete: ');
+          const deletedOrder = await purchaseOrdersModule.delete(parseInt(orderIdDelete));
+          console.log(deletedOrder > 0 ? 'Order successfully deleted.' : 'No order found.');
+          break;
+
+      case '6': 
         orderManaging = false;
         break;
+
       default:
-        console.log('Invalid option. Please try again.');
+        console.log('Option invalide. Veuillez réessayer.');
     }
   }
 }

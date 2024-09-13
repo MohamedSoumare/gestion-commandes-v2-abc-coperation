@@ -2,7 +2,7 @@ const cnx = require('../database/db');
 
 const customersModule = {
 
-async getAll() {
+  async getAll() {
     try {
       const [rows] = await cnx.query('SELECT * FROM customers');
       return rows;
@@ -10,9 +10,9 @@ async getAll() {
       console.error('Error while retrieving customers:', error);
       throw new Error('Unable to retrieve customers. Please try again later.');
     }
-},
+  },
 
-async getById(id) {
+  async getById(id) {
     try {
       const [rows] = await cnx.query('SELECT * FROM customers WHERE id = ?', [id]);
       if (rows.length > 0) {
@@ -24,23 +24,62 @@ async getById(id) {
       console.error(`Error when retrieving the customer with ID ${id}:`, error);
       throw new Error(`Unable to retrieve the customer with ID ${id}.`);
     }
-},
+  },
 
-async create(data) {
+  async create(data) {
+
     try {
+      // Validation: check for empty fields
+      if(!data.name || !data.address || !data.email || !data.phone) {
+        throw new Error('All fields (name, address, email, phone) are required and cannot be empty.');
+      }
+
+      // Validation: check for valid phone number (up to 20 digits)
+      const phone = /^\d{1,20}$/;
+      if (!phone.test(data.phone)) {
+        throw new Error('Phone number must contain only digits and be at most 20 characters long.');
+      }
+
+      // Validation: check for valid email format
+      const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email.test(data.email)) {
+        throw new Error('Invalid email format.');
+      }
+
       const [result] = await cnx.query(
         'INSERT INTO customers (name, address, email, phone) VALUES (?, ?, ?, ?)',
         [data.name, data.address, data.email, data.phone]
       );
-      return result.insertId; // Returns the ID of the newly created customer
+      return result.insertId;
     } catch (error) {
-      console.error('Error while creating the customer:', error);
-      throw new Error('Unable to create customer. Please check your input and try again.');
+      if (error.message.includes('All fields') || error.message.includes('Phone number') || error.message.includes('Invalid email')) {
+        throw error;
+      } else {
+        console.error('Error while creating the customer:', error);
+        throw new Error('Unable to create customer. Please check your input and try again.');
+      }
     }
   },
 
-async update(id, data) {
+  async update(id, data) {
     try {
+      // Validation: check for empty fields
+      if (!data.name || !data.address || !data.email || !data.phone) {
+        throw new Error('All fields (name, address, email, phone) are required and cannot be empty.');
+      }
+
+      // Validation: check for valid phone number (up to 20 digits)
+      const phone = /^\d{1,20}$/;
+      if (!phone.test(data.phone)) {
+        throw new Error('Phone number must contain only digits and be at most 20 characters long.');
+      }
+
+      // Validation: check for valid email format
+      const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!email.test(data.email)) {
+        throw new Error('Invalid email format.');
+      }
+
       const [result] = await cnx.query(
         'UPDATE customers SET name = ?, address = ?, email = ?, phone = ? WHERE id = ?',
         [data.name, data.address, data.email, data.phone, id]
@@ -48,20 +87,24 @@ async update(id, data) {
       if (result.affectedRows === 0) {
         throw new Error(`Customer with ID ${id} not found. Update failed.`);
       }
-      return result.affectedRows; // Returns the number of affected rows
+      return result.affectedRows;
     } catch (error) {
-      console.error(`Error while updating the customer with ID ${id}:`, error);
-      throw new Error(`Unable to update customer with ID ${id}. Please check your input.`);
+      if (error.message.includes('All fields') || error.message.includes('Phone number') || error.message.includes('Invalid email')) {
+        throw error;
+      } else {
+        console.error(`Error while updating the customer with ID ${id}:`, error);
+        throw new Error(`Unable to update customer with ID ${id}. Please check your input.`);
+      }
     }
-},
+  },
 
-async delete(id) {
+  async delete(id) {
     try {
       const [result] = await cnx.query('DELETE FROM customers WHERE id = ?', [id]);
       if (result.affectedRows === 0) {
         throw new Error(`Customer with ID ${id} not found. Deletion failed.`);
       }
-      return result.affectedRows; // Returns the number of deleted rows
+      return result.affectedRows;
     } catch (error) {
       console.error(`Error when deleting the customer with ID ${id}:`, error);
       throw new Error(`Unable to delete customer with ID ${id}.`);

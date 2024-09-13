@@ -122,6 +122,7 @@ const purchaseOrdersModule = {
     }
   },
 
+
   async updateOrderDetail(detailId, data) {
     try {
       const [result] = await cnx.query(

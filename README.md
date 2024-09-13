@@ -1,6 +1,7 @@
 # Gestion de Commandes ABC-Cooeration
 
 ## Description
+
 ABC Corporation est une entreprise spécialisée dans l'importation et l'exportation de produits. Dans le cadre de la modernisation et de l'optimisation de la gestion de ses activités, l'entreprise souhaite à nouveau mettre en place un système de gestion des commandes développé en Node.js, avec une base de données MySQL. Ce système permettra de gérer les clients, les produits, les commandes et les paiements.
 
 ## Prérequis
@@ -11,19 +12,22 @@ ABC Corporation est une entreprise spécialisée dans l'importation et l'exporta
 ## Installation
 
 1. Clonez ce dépôt sur votre machine locale :
-   ```
+
+```bash
    git clone https://github.com/MohamedSoumare/gestion-commandes-v2-abc-coperation.git
-   ```
+```
 
 2. Naviguez dans le répertoire du projet :
-   ```
+
+```bash
    cd gestion-commandes-v2-abc-coperation
-   ```
+```
 
 3. Installez les dépendances :
-   ```
-   npm install
-   ```
+
+```bash
+  npm install
+```
 
 4. Configurez la base de données :
    - Créez une base de données MySQL nommée `abc_orders_mangement`
@@ -38,7 +42,7 @@ ABC Corporation est une entreprise spécialisée dans l'importation et l'exporta
 
 Pour lancer l'application, exécutez la commande suivante :
 
-```
+```bash
 npm start
 ```
 
@@ -62,12 +66,13 @@ L'application démarre en mode interactif dans la console. Suivez les instructio
 
 ## Fonctionnalités
 
-- Ajouter, afficher, modifier et supprimer des clients
-- Ajouter, afficher, modifier et supprimer des produits
-- Créer des commandes avec plusieurs détails
-- Afficher, modifier et supprimer des commandes
-- Gérer les paiements associés aux commandes
+1. **Gestion des clients:**  Ajouter, afficher, modifier et supprimer des clients.
+2. **Gestion des produits:** Ajouter, afficher, modifier et supprimer des produits.
+3. **Gestion des commandes:** Créer des commandes avec plusieurs détails.Afficher, modifier et supprimer des commandes
+4. **Gestion des paiements:**  Gérer les paiements associés aux commandes.
+
 
 ## Author
 
-- Mohamed Soumare
+-[MohamedSoumare](https://github.com/MohamedSoumare)
+
