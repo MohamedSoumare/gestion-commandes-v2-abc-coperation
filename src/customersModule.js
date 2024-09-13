@@ -26,29 +26,29 @@ const customersModule = {
     }
   },
 
-  async create(data) {
+  async create(customer) {
 
     try {
       // Validation: check for empty fields
-      if(!data.name || !data.address || !data.email || !data.phone) {
+      if(!customer.name || !customer.address || !customer.email || !customer.phone) {
         throw new Error('All fields (name, address, email, phone) are required and cannot be empty.');
       }
 
       // Validation: check for valid phone number (up to 20 digits)
       const phone = /^\d{1,20}$/;
-      if (!phone.test(data.phone)) {
+      if (!phone.test(customer.phone)) {
         throw new Error('Phone number must contain only digits and be at most 20 characters long.');
       }
 
       // Validation: check for valid email format
       const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!email.test(data.email)) {
+      if (!email.test(customer.email)) {
         throw new Error('Invalid email format.');
       }
 
       const [result] = await cnx.query(
         'INSERT INTO customers (name, address, email, phone) VALUES (?, ?, ?, ?)',
-        [data.name, data.address, data.email, data.phone]
+        [customer.name, customer.address, customer.email, customer.phone]
       );
       return result.insertId;
     } catch (error) {
@@ -61,28 +61,28 @@ const customersModule = {
     }
   },
 
-  async update(id, data) {
+  async update(id, customer) {
     try {
       // Validation: check for empty fields
-      if (!data.name || !data.address || !data.email || !data.phone) {
+      if (!customer.name || !customer.address || !customer.email || !customer.phone) {
         throw new Error('All fields (name, address, email, phone) are required and cannot be empty.');
       }
 
       // Validation: check for valid phone number (up to 20 digits)
       const phone = /^\d{1,20}$/;
-      if (!phone.test(data.phone)) {
+      if (!phone.test(customer.phone)) {
         throw new Error('Phone number must contain only digits and be at most 20 characters long.');
       }
 
       // Validation: check for valid email format
       const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!email.test(data.email)) {
+      if (!email.test(customer.email)) {
         throw new Error('Invalid email format.');
       }
 
       const [result] = await cnx.query(
         'UPDATE customers SET name = ?, address = ?, email = ?, phone = ? WHERE id = ?',
-        [data.name, data.address, data.email, data.phone, id]
+        [customer.name, customer.address, customer.email, customer.phone, id]
       );
       if (result.affectedRows === 0) {
         throw new Error(`Customer with ID ${id} not found. Update failed.`);

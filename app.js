@@ -269,29 +269,29 @@ async function handlePurchaseOrders() {
         const orderData = await getPurchaseOrderInput();
         const customerExists = await customersModule.getById(orderData.customer_id);
         if (!customerExists) {
-          console.log("Client introuvable. Veuillez d'abord créer le client.");
+          console.log('Client not found. Please first create the client.');
           break;
         }
 
         currentOrder = orderData; // Temporary storage of order data
         orderDetails = []; // Reset the order details
 
-        console.log('Les données de la commande sont temporairement enregistrées. Vous pouvez maintenant ajouter des détails.');
+        console.log('The order data is saved. You can now add details');
 
         let addingDetails = true;
         while (addingDetails) {
-          console.log('\n--- Menu des Détails de la Commande ---');
-          console.log('1. Ajouter un détail de commande');
-          console.log('2. Sauvegarder et quitter');
-          console.log('3. Quitter sans sauvegarder');
-          const detailChoice = await question('Choisissez une option: ');
+          console.log('\n--- Order Details Menu ---');
+          console.log('1. Add an order detail');
+          console.log('2. Save and exit');
+          console.log('3. Exit without saving');
+          const detailChoice = await question('Choose an option :');
 
           switch (detailChoice) {
             case '1': // Add order detail
               const orderDetail = await getOrderDetailInput();
               if (orderDetail) {
                 orderDetails.push(orderDetail); // Adds detail in temporary table
-                console.log('Détail de commande ajouté en mémoire.');
+                console.log('Order detail added');
               }
               break;
 
@@ -301,19 +301,19 @@ async function handlePurchaseOrders() {
                 try {
                  // Save the order first
                   const orderId = await purchaseOrdersModule.create(currentOrder);
-                  console.log('Commande sauvegardée avec succès dans la base de données. ID:', orderId);
+                  console.log('Command successfully saved. ID:', orderId);
 
                   // Save order details in database
                   for (const detail of orderDetails) {
                     detail.order_id = orderId; // Assigns the order ID to each detail
                     await purchaseOrdersModule.addOrderDetail(detail);
                   }
-                  console.log('Détails de commande sauvegardés avec succès.');
+                  console.log('Order details saved successfully.');
                 } catch (error) {
-                  console.error('Erreur lors de la sauvegarde de la commande ou des détails :', error);
+                  console.error('Error saving order or details:', error);
                 }
               } else {
-                console.log('Aucune commande à sauvegarder.');
+                console.log('No orders to save.');
               }
               addingDetails = false;
               break;
@@ -321,46 +321,48 @@ async function handlePurchaseOrders() {
             case '3': // Exit without saving
               currentOrder = null; // Reset temporary command data
               orderDetails = [];   // Réinitialiser les détails de commande temporaires
-              console.log('Création de commande annulée.');
+              console.log('Order creation cancelled.');
               addingDetails = false;
               break;
 
             default:
-              console.log('Option invalide. Veuillez réessayer.');
+              console.log('Invalid option. Please try again.');
           }
         }
         break;
 
         case '2': 
         const orders = await purchaseOrdersModule.getAll(); 
-        console.log('Commandes:', orders);
+        console.log('Orders:', orders);
         break;
 
       case '3': 
-        const orderId = await question('ID de la commande à voir: ');
+        const orderId = await question('Order ID to be viewed:');
         const order = await purchaseOrdersModule.getById(parseInt(orderId));
-        console.log(order ? 'Commande:' : 'Aucune commande trouvée.', order);
+        console.log(order ? 'Order:' : 'No orders found.', order);
         break;
 
-      case '4': // Modifier une commande
-        const orderIdUpdate = await question('ID de la commande à modifier : ');
+      case '4': // Edit an order
+        const orderIdUpdate = await question('The ID of the command to be modified: ');
         let updatedOrderData = await getPurchaseOrderInput();
 
         let editingDetails = true;
         while (editingDetails) {
-          console.log('\n--- Menu de Modification des Détails de la Commande ---');
-          console.log('1. Voir les détails actuels');
-          console.log('2. Ajouter un nouveau détail');
-          console.log('3. Modifier un détail existant');
-          console.log('4. Sauvegarder et quitter');
-          console.log('5. Quitter sans sauvegarder');
+          
+          console.log('\n--- Edit Order Details ---');
+          console.log('1. View current details');
+          console.log('2. Add a new order detail');
+          console.log('3. Edit an existing detail');
+          console.log('4. Save changes and exit');
+          console.log('5. Cancel changes and exit');
+          
 
-          const detailChoice = await question('Choisissez une option : ');
+          const detailChoice = await question('Choose an option :');
 
           switch (detailChoice) {
             case '1': // View current order details
               const currentDetails = await purchaseOrdersModule.getOrderDetails(orderIdUpdate);
-              console.log('Détails de la commande actuelle :', currentDetails);
+              console.log('Current order details :', currentDetails);
               break;
 
             case '2': // Add new order detai
@@ -370,12 +372,12 @@ async function handlePurchaseOrders() {
                   updatedOrderData.order_details = [];
                 }
                 updatedOrderData.order_details.push(newDetail);
-                console.log('Nouveau détail de commande ajouté.');
+                console.log('New order detail added.');
               }
               break;
 
             case '3': // Edit an existing detail
-              const detailIdToEdit = await question('ID du détail à modifier : ');
+              const detailIdToEdit = await question('ID of the detail to modify: ');
               const updatedDetail = await getOrderDetailInput(orderIdUpdate);
               if (updatedDetail) {
                 updatedDetail.id = parseInt(detailIdToEdit);
@@ -383,7 +385,7 @@ async function handlePurchaseOrders() {
                   updatedOrderData.order_details = [];
                 }
                 updatedOrderData.order_details.push(updatedDetail);
-                console.log('Détail de commande mis à jour.');
+                console.log('Order detail updated.');
               }
               break;
 
@@ -397,19 +399,19 @@ async function handlePurchaseOrders() {
               break;
 
             default:
-              console.log('Option invalide. Veuillez réessayer.');
+              console.log('Invalid option. Please try again.');
           }
         }
 
         if (updatedOrderData) {
           try {
             const updatedOrder = await purchaseOrdersModule.update(parseInt(orderIdUpdate), updatedOrderData);
-            console.log('Commande mise à jour avec succès.');
+            console.log('Order updated successfully.');
           } catch (error) {
-            console.error('Erreur lors de la mise à jour de la commande :', error.message);
+            console.error('Error while updating the command :', error.message);
           }
         } else {
-          console.log('Modification de la commande annulée.');
+          console.log('Change of cancelled order.');
         }
         break;
 
@@ -424,7 +426,7 @@ async function handlePurchaseOrders() {
         break;
 
       default:
-        console.log('Option invalide. Veuillez réessayer.');
+        console.log('Invalid option. Please try again.');
     }
   }
 }

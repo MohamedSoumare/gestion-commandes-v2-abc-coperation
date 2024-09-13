@@ -1,4 +1,4 @@
-const cnx = require('../database/db');
+const cnx = require('../orderbase/db');
 
 const purchaseOrdersModule = {
   async getAll() {
@@ -31,18 +31,18 @@ const purchaseOrdersModule = {
     }
 },
 
-  async create(data) {
+  async create(order) {
     try {
       // Check if customer exists
-      const [customerRows] = await cnx.query('SELECT id FROM customers WHERE id = ?', [data.customer_id]);
+      const [customerRows] = await cnx.query('SELECT id FROM customers WHERE id = ?', [order.customer_id]);
       if (customerRows.length === 0) {
-        throw new Error(`Customer with ID ${data.customer_id} does not exist.`);
+        throw new Error(`Customer with ID ${order.customer_id} does not exist.`);
       }
 
       // Insert the purchase order
       const [result] = await cnx.query(
         'INSERT INTO purchase_orders (date, customer_id, delivery_address, track_number, status) VALUES (?, ?, ?, ?, ?)',
-        [data.date, data.customer_id, data.delivery_address, data.track_number, data.status]
+        [order.date, order.customer_id, order.delivery_address, order.track_number, order.status]
       );
 
       return result.insertId; // Returns the newly created purchase order ID
@@ -123,11 +123,11 @@ const purchaseOrdersModule = {
   },
 
 
-  async updateOrderDetail(detailId, data) {
+  async updateOrderDetail(detailId, order) {
     try {
       const [result] = await cnx.query(
         'UPDATE order_details SET product_id = ?, quantity = ?, price = ? WHERE id = ?',
-        [data.product_id, data.quantity, data.price, detailId]
+        [order.product_id, order.quantity, order.price, detailId]
       );
       if (result.affectedRows === 0) {
         throw new Error(`Order detail with ID ${detailId} not found.`);
