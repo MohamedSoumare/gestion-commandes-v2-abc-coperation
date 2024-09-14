@@ -106,18 +106,30 @@ async function getOrderDetailInput(orderId) {
 
 // Function to collect payment data
 async function getPaymentInput() {
-  const date = await question('Date payment (YYYY-MM-DD) :');
-  const amount = await question('Amount: ');
-  const payment_method = await question('Payment method: ');
-  const order_id = await question('Order ID: ');
-  return {
-    date, 
-    amount: parseFloat(amount),
-    payment_method,
-    order_id: parseInt(order_id),
-  };
-}
+  try {
+    const date = await question('Date of payment (YYYY-MM-DD): ');
+    const amount = await question('Amount: ');
+    const paymentMethod = await question('Payment method: ');
+    const orderId = await question('Order ID: ');
 
+    // Validation
+    if (!date || !amount || !paymentMethod || !orderId) {
+      throw new Error('All fields (date, amount, payment_method, order_id) are required.');
+    }
+
+    const payment = {
+      date,
+      amount: parseFloat(amount), 
+      paymentMethod,
+      orderId
+    };
+
+    await paymentsModule.create(payment);
+    console.log('Payment successfully created.');
+  } catch (error) {
+    console.log('An error occurred:', error.message);
+  }
+}
 // Submenu to manage customers
 async function showCustomerMenu() {
   console.log('\n--- Customer Menu ---');
@@ -178,42 +190,46 @@ async function showPaymentMenu() {
 async function handleCustomers() {
   let customerManaging = true;
   while (customerManaging) {
-    const choice = await showCustomerMenu();
-    switch (choice) {
-      case '1':
-        const customerData = await getCustomerInput();
-        await customersModule.create(customerData);
-        console.log('Customer successfully added.');
-        break;
-      case '2':
-        const customers = await customersModule.getAll();
-        console.log('Customers:', customers);
-        break;
-      case '3':
-        const customerId = await question('ID of the customer to view: ');
-        const customer = await customersModule.getById(parseInt(customerId));
-        customer ? console.log('Customer:', customer) : console.log('No customer found.');
-        break;
-      case '4':
-        const customerIdUpdate = await question('ID of the customer to edit: ');
-        const updatedCustomerData = await getCustomerInput();
-        const updatedCustomer = await customersModule.update(parseInt(customerIdUpdate), updatedCustomerData);
-        console.log(updatedCustomer > 0 ? 'Customer successfully updated.' : 'No customer found.');
-        break;
-      case '5':
-        const customerIdDelete = await question('ID of the customer to delete: ');
-        const deletedCustomer = await customersModule.delete(parseInt(customerIdDelete));
-        console.log(deletedCustomer > 0 ? 'Customer successfully deleted.' : 'No customer found.');
-        break;
-      case '6':
-        customerManaging = false;
-        break;
-      default:
-        console.log('Invalid option. Please try again.');
+    try {
+      const choice = await showCustomerMenu();
+      switch (choice) {
+        case '1':
+          const customerData = await getCustomerInput();
+          await customersModule.create(customerData);
+          console.log('Customer successfully added.');
+          break;
+        case '2':
+          const customers = await customersModule.getAll();
+          console.log('Customers:', customers);
+          break;
+        case '3':
+          const customerId = await question('ID of the customer to view: ');
+          const customer = await customersModule.getById(parseInt(customerId));
+          customer ? console.log('Customer:', customer) : console.log('No customer found.');
+          break;
+        case '4':
+          const customerIdUpdate = await question('ID of the customer to edit: ');
+          const updatedCustomerData = await getCustomerInput();
+          const updatedCustomer = await customersModule.update(parseInt(customerIdUpdate), updatedCustomerData);
+          console.log(updatedCustomer > 0 ? 'Customer successfully updated.' : 'No customer found.');
+          break;
+        case '5':
+          const customerIdDelete = await question('ID of the customer to delete: ');
+          const deletedCustomer = await customersModule.delete(parseInt(customerIdDelete));
+          console.log(deletedCustomer > 0 ? 'Customer successfully deleted.' : 'No customer found.');
+          break;
+        case '6':
+          customerManaging = false;
+          break;
+        default:
+          console.log('Invalid option. Please try again.');
+      }
+    } catch (error) {
+       //Displays only the error message without the stack trace
+      console.log(`An error occurred: ${error.message}`);
     }
   }
 }
-
 // Product management
 async function handleProducts() {
   let productManaging = true;
@@ -229,22 +245,41 @@ async function handleProducts() {
         const products = await productsModule.getAll();
         console.log('Products:', products);
         break;
-      case '3':
-        const productIdGet = await question('ID of the product to view: ');
-        const product = await productsModule.getById(parseInt(productIdGet));
-        console.log(product ? 'Product:' : 'No product found.', product);
-        break;
-      case '4':
-        const productIdToUpdate = await question('ID of the product to edit: ');
-        const updatedProductData = await getProductInput();
-        const updatedProduct = await productsModule.update(parseInt(productIdToUpdate), updatedProductData);
-        console.log(updatedProduct > 0 ? 'Product successfully updated.' : 'No product found.');
-        break;
-      case '5':
-        const productIdDelete = await question('ID of the product to delete: ');
-        const deletedProduct = await productsModule.delete(parseInt(productIdDelete));
-        console.log(deletedProduct > 0 ? 'Product successfully deleted.' : 'No product found.');
-        break;
+        case '3':
+          const productIdGet = await question('ID of the product to view: ');
+          const product = await productsModule.getById(parseInt(productIdGet));
+          if (product) {
+            console.log('Product:', product);
+          } else {
+            console.log(`No product found with ID ${productIdGet}.`);
+          }
+          break;
+        
+          case '4':
+            const productIdToUpdate = await question('ID of the product to edit: ');
+            const updatedProductData = await getProductInput();
+          
+            // Vérifiez que les champs obligatoires sont remplis avant de procéder à la mise à jour
+            if (!updatedProductData.name || !updatedProductData.description || !updatedProductData.stock || 
+                !updatedProductData.price || !updatedProductData.category || 
+                !updatedProductData.barcode || !updatedProductData.status) {
+              console.log('Error: All fields (name, description, stock, price, category, barcode, status) are required.');
+            } else {
+              const updatedProduct = await productsModule.update(parseInt(productIdToUpdate), updatedProductData);
+              console.log(updatedProduct > 0 ? 'Product successfully updated.' : 'No product found.');
+            }
+            break;
+          
+            case '5':
+              const productIdDelete = await question('ID of the product to delete: ');
+              try {
+                const deletedProduct = await productsModule.delete(parseInt(productIdDelete));
+                console.log(deletedProduct > 0 ? 'Product successfully deleted.' : 'No product found.');
+              } catch (error) {
+                console.log(`An error occurred: ${error.message}`);
+              }
+              break;
+            
       case '6':
         productManaging = false;
         break;
@@ -268,6 +303,13 @@ async function handlePurchaseOrders() {
 
         const orderData = await getPurchaseOrderInput();
         const customerExists = await customersModule.getById(orderData.customer_id);
+
+        // Validation de l'ID du client
+        if (isNaN(orderData.customer_id) || !orderData.customer_id) {
+          console.log('Invalid customer ID. Please provide a valid customer ID.');
+          break;
+        }
+
         if (!customerExists) {
           console.log('Client not found. Please first create the client.');
           break;
@@ -336,15 +378,29 @@ async function handlePurchaseOrders() {
         console.log('Orders:', orders);
         break;
 
-      case '3': 
-        const orderId = await question('Order ID to be viewed:');
-        const order = await purchaseOrdersModule.getById(parseInt(orderId));
+        case '3': 
+        const orderId = parseInt(await question('Order ID to be viewed:'));
+        
+        // Validation de l'ID de la commande
+        if (isNaN(orderId) || orderId <= 0) {
+          console.log('Invalid order ID. Please provide a valid order ID.');
+          break;
+        }
+      
+        const order = await purchaseOrdersModule.getById(orderId);
         console.log(order ? 'Order:' : 'No orders found.', order);
         break;
-
+      
       case '4': // Edit an order
         const orderIdUpdate = await question('The ID of the command to be modified: ');
+        // Validation de l'ID de la commande
+  if (isNaN(orderIdUpdate) || orderIdUpdate <= 0) {
+    console.log('Invalid order ID. Please provide a valid order ID.');
+    break;
+  }
+
         let updatedOrderData = await getPurchaseOrderInput();
+
 
         let editingDetails = true;
         while (editingDetails) {
@@ -416,11 +472,19 @@ async function handlePurchaseOrders() {
         break;
 
       case '5':
-          const orderIdDelete = await question('ID of the order to delete: ');
-          const deletedOrder = await purchaseOrdersModule.delete(parseInt(orderIdDelete));
+        case '5':
+          const orderIdDelete = parseInt(await question('ID of the order to delete: '));
+          
+          // Validation de l'ID de la commande
+          if (isNaN(orderIdDelete) || orderIdDelete <= 0) {
+            console.log('Invalid order ID. Please provide a valid order ID.');
+            break;
+          }
+        
+          const deletedOrder = await purchaseOrdersModule.delete(orderIdDelete);
           console.log(deletedOrder > 0 ? 'Order successfully deleted.' : 'No order found.');
           break;
-
+        
       case '6': 
         orderManaging = false;
         break;
@@ -436,46 +500,65 @@ async function handlePayments() {
   let paymentManaging = true;
   while (paymentManaging) {
     const choice = await showPaymentMenu();
-    switch (choice) {
-      case '1':
-        const paymentData = await getPaymentInput();
-        await paymentsModule.create(paymentData);
-        console.log('Payment successfully added.');
-        break;
-      case '2':
-        const payments = await paymentsModule.getAll();
-        console.log('Payments:', payments);
-        break;
-      case '3':
-        const paymentIdGet = await question('ID of the payment to view: ');
-        const payment = await paymentsModule.getById(parseInt(paymentIdGet));
-        console.log(payment ? 'Payment:' : 'No payment found.', payment);
-        break;
-      case '4':
-        const paymentIdUpdate = await question('ID of the payment to edit: ');
-        const updatedPaymentData = await getPaymentInput();
-        const updatedPayment = await paymentsModule.update(parseInt(paymentIdUpdate), updatedPaymentData);
-        console.log(updatedPayment > 0 ? 'Payment successfully updated.' : 'No payment found.');
-        break;
-      case '5':
-        const paymentIdDelete = await question('ID of the payment to delete: ');
-        const deletedPayment = await paymentsModule.delete(parseInt(paymentIdDelete));
-        console.log(deletedPayment > 0 ? 'Payment successfully deleted.' : 'No payment found.');
-        break;
-      case '6':
-        paymentManaging = false;
-        break;
-      default:
-        console.log('Invalid option. Please try again.');
+    try {
+      switch (choice) {
+        case '1':
+          const paymentData = await getPaymentInput();
+          await paymentsModule.create(paymentData);
+          console.log('Payment successfully added.');
+          break;
+        case '2':
+          const payments = await paymentsModule.getAll();
+          console.log('Payments:', payments);
+          break;
+          case '3':
+            const paymentIdGet = await question('ID of the payment to view: ');
+            try {
+              const payment = await paymentsModule.getById(parseInt(paymentIdGet));
+              if (payment) {
+                console.log('Payment:', payment);
+              } else {
+                console.log(`No payment found with ID ${paymentIdGet}`);
+              }
+            } catch (error) {
+              console.log('An error occurred:', error.message); 
+            }
+            break;
+          
+          case '4':
+          const paymentIdUpdate = await question('ID of the payment to edit: ');
+          try {
+            const updatedPaymentData = await getPaymentInput();
+            const updatedPayment = await paymentsModule.update(parseInt(paymentIdUpdate), updatedPaymentData);
+            console.log(updatedPayment > 0 ? 'Payment successfully updated.' : 'No payment found.');
+          } catch (error) {
+            console.log('An error occurred:', error.message);  // Affiche uniquement le message d'erreur
+          }
+          break;
+        case '5':
+          const paymentIdDelete = await question('ID of the payment to delete: ');
+          const deletedPayment = await paymentsModule.delete(parseInt(paymentIdDelete));
+          console.log(deletedPayment > 0 ? 'Payment successfully deleted.' : 'No payment found.');
+          break;
+        case '6':
+          paymentManaging = false;
+          break;
+        default:
+          console.log('Invalid option. Please try again.');
+      }
+    } catch (error) {
+      console.log('An error occurred:', error.message);  // N'affiche que le message d'erreur
     }
   }
 }
 
-// Main function to control the menu navigation
+
+
 async function main() {
-  let running = true;
-  while (running) {
+  let exit = false;
+  while (!exit) {
     const choice = await showMainMenu();
+
     switch (choice) {
       case '1':
         await handleCustomers();
@@ -484,20 +567,21 @@ async function main() {
         await handleProducts();
         break;
       case '3':
-        await handlePurchaseOrders();
+        await handlePurchaseOrders(); 
         break;
       case '4':
         await handlePayments();
         break;
       case '5':
-        running = false;
+        console.log('Exiting the system...');
+        exit = true;
+        rl.close(); // Close the readline interface when exiting
         break;
       default:
         console.log('Invalid option. Please try again.');
     }
   }
-
-  rl.close();
 }
-// Start the application
-main();
+
+// Run the main program
+main().catch(err => console.error('An unexpected error occurred:', err));

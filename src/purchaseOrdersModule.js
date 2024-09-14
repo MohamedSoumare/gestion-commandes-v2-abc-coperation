@@ -1,4 +1,4 @@
-const cnx = require('../orderbase/db');
+const cnx = require('../database/db');
 
 const purchaseOrdersModule = {
   async getAll() {
@@ -13,45 +13,55 @@ const purchaseOrdersModule = {
 
   async getById(id) {
     try {
+      // Vérifiez si l'ID est bien un nombre avant de procéder
+      if (isNaN(id)) {
+        throw new Error(`Invalid customer ID: ${id}. ID must be a number.`);
+      }
+  
       const [orderRows] = await cnx.query('SELECT * FROM purchase_orders WHERE id = ?', [id]);
-
+  
       if (orderRows.length === 0) {
         throw new Error(`Purchase order with ID ${id} not found.`);
       }
-
+  
       const order = orderRows[0];
-
+  
       const [detailsRows] = await cnx.query('SELECT * FROM order_details WHERE order_id = ?', [id]);
       order.order_details = detailsRows;
-
+  
       return order;
     } catch (error) {
       console.error(`Error retrieving purchase order with ID ${id}:`, error);
       throw new Error(`Unable to retrieve purchase order with ID ${id}.`);
     }
-},
+  },  
 
   async create(order) {
     try {
+      // Vérifiez que l'ID du client est bien un nombre valide
+      if (isNaN(order.customer_id)) {
+        throw new Error(`Invalid customer ID: ${order.customer_id}. ID must be a number.`);
+      }
+  
       // Check if customer exists
       const [customerRows] = await cnx.query('SELECT id FROM customers WHERE id = ?', [order.customer_id]);
       if (customerRows.length === 0) {
         throw new Error(`Customer with ID ${order.customer_id} does not exist.`);
       }
-
+  
       // Insert the purchase order
       const [result] = await cnx.query(
         'INSERT INTO purchase_orders (date, customer_id, delivery_address, track_number, status) VALUES (?, ?, ?, ?, ?)',
         [order.date, order.customer_id, order.delivery_address, order.track_number, order.status]
       );
-
+  
       return result.insertId; // Returns the newly created purchase order ID
     } catch (error) {
       console.error('Error creating purchase order:', error);
       throw new Error('Unable to create purchase order. Please check your input and try again.');
     }
   },
-
+    
   async addOrderDetail(orderDetail) {
     try {
       const [result] = await cnx.query(
@@ -140,31 +150,22 @@ const purchaseOrdersModule = {
   },
 
   async delete(id) {
-    let connection;
     try {
-      connection = await cnx.getConnection();
-      await connection.beginTransaction();
-
-      // Delete order details
-      await connection.query('DELETE FROM order_details WHERE order_id = ?', [id]);
-
-      // Delete the purchase order
-      const [result] = await connection.query('DELETE FROM purchase_orders WHERE id = ?', [id]);
-
-      await connection.commit();
-      if (result.affectedRows === 0) {
-        throw new Error(`Purchase order with ID ${id} not found.`);
+      // Vérifiez d'abord si le produit existe
+      const [product] = await cnx.query('SELECT id FROM products WHERE id = ?', [id]);
+      if (product.length === 0) {
+        throw new Error(`Product with ID ${id} not found.`);
       }
-
-      return result.affectedRows; // Returns the number of deleted rows
+  
+      // Si le produit existe, procédez à la suppression
+      const [result] = await cnx.query('DELETE FROM products WHERE id = ?', [id]);
+  
+      return result.affectedRows; // Retourne le nombre de lignes supprimées
     } catch (error) {
-      if (connection) await connection.rollback();
-      console.error(`Error deleting purchase order with ID ${id}:`, error);
-      throw new Error(`Unable to delete purchase order with ID ${id}.`);
-    } finally {
-      if (connection) connection.release(); // Ensure connection is released
+      console.error(`Error deleting product with ID ${id}:`, error);
+      throw new Error(`Unable to delete product with ID ${id}.`);
     }
   }
-};
 
+}
 module.exports = purchaseOrdersModule;
