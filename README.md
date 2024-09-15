@@ -30,7 +30,7 @@ ABC Corporation est une entreprise spécialisée dans l'importation et l'exporta
 ```
 
 4. Configurez la base de données :
-   - Créez une base de données MySQL nommée `abc_orders_mangement`
+   - Créez une base de données MySQL nommée `order_mangement`
    - Importez le schéma de la base de données à partir du fichier `database/order_mangement.sql`
 
 5. Configurez les paramètres de connexion à la base de données :
