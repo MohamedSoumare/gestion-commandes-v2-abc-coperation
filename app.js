@@ -1,8 +1,8 @@
 const readline = require('readline');
-const customersModule = require('./src/customersModule');
-const productsModule = require('./src/productsModule');
-const purchaseOrdersModule = require('./src/purchaseOrdersModule');
-const paymentsModule = require('./src/paymentsModule');
+const customersModule = require('./src/customerModule');
+const productsModule = require('./src/productModule');
+const purchaseOrdersModule = require('./src/purchaseOrderModule');
+const paymentsModule = require('./src/paymentModule');
 
 // Input interface to capture user inputs
 const rl = readline.createInterface({
@@ -259,7 +259,7 @@ async function handleProducts() {
             const productIdToUpdate = await question('ID of the product to edit: ');
             const updatedProductData = await getProductInput();
           
-            // Vérifiez que les champs obligatoires sont remplis avant de procéder à la mise à jour
+           
             if (!updatedProductData.name || !updatedProductData.description || !updatedProductData.stock || 
                 !updatedProductData.price || !updatedProductData.category || 
                 !updatedProductData.barcode || !updatedProductData.status) {
@@ -300,25 +300,25 @@ async function handlePurchaseOrders() {
 
     switch (choice) {
       case '1': // Create new order
-
         const orderData = await getPurchaseOrderInput();
-        const customerExists = await customersModule.getById(orderData.customer_id);
 
-        // Validation de l'ID du client
+        // Validation of the customer ID before proceeding
         if (isNaN(orderData.customer_id) || !orderData.customer_id) {
           console.log('Invalid customer ID. Please provide a valid customer ID.');
           break;
         }
 
+        const customerExists = await customersModule.getById(orderData.customer_id);
+
         if (!customerExists) {
-          console.log('Client not found. Please first create the client.');
+          console.log('Customer not found. Please first create the customer.');
           break;
         }
 
-        currentOrder = orderData; // Temporary storage of order data
+        currentOrder = orderData; // Store the order data temporarily
         orderDetails = []; // Reset the order details
 
-        console.log('The order data is saved. You can now add details');
+        console.log('Order data saved. You can now add details.');
 
         let addingDetails = true;
         while (addingDetails) {
@@ -326,33 +326,32 @@ async function handlePurchaseOrders() {
           console.log('1. Add an order detail');
           console.log('2. Save and exit');
           console.log('3. Exit without saving');
-          const detailChoice = await question('Choose an option :');
+          const detailChoice = await question('Choose an option: ');
 
           switch (detailChoice) {
             case '1': // Add order detail
               const orderDetail = await getOrderDetailInput();
               if (orderDetail) {
-                orderDetails.push(orderDetail); // Adds detail in temporary table
-                console.log('Order detail added');
+                orderDetails.push(orderDetail); // Add detail to temporary storage
+                console.log('Order detail added.');
               }
               break;
 
             case '2': // Save to database
-
               if (currentOrder) {
                 try {
-                 // Save the order first
+                  // Save the order first
                   const orderId = await purchaseOrdersModule.create(currentOrder);
-                  console.log('Command successfully saved. ID:', orderId);
+                  console.log('Order successfully saved. ID:', orderId);
 
-                  // Save order details in database
+                  // Save order details in the database
                   for (const detail of orderDetails) {
-                    detail.order_id = orderId; // Assigns the order ID to each detail
+                    detail.order_id = orderId; // Assign order ID to each detail
                     await purchaseOrdersModule.addOrderDetail(detail);
                   }
                   console.log('Order details saved successfully.');
                 } catch (error) {
-                  console.error('Error saving order or details:', error);
+                  console.log('Error saving order or details:', error.message);
                 }
               } else {
                 console.log('No orders to save.');
@@ -361,8 +360,8 @@ async function handlePurchaseOrders() {
               break;
 
             case '3': // Exit without saving
-              currentOrder = null; // Reset temporary command data
-              orderDetails = [];   // Réinitialiser les détails de commande temporaires
+              currentOrder = null; // Reset temporary order data
+              orderDetails = [];   // Reset temporary order details
               console.log('Order creation cancelled.');
               addingDetails = false;
               break;
@@ -373,118 +372,123 @@ async function handlePurchaseOrders() {
         }
         break;
 
-        case '2': 
-        const orders = await purchaseOrdersModule.getAll(); 
-        console.log('Orders:', orders);
+      case '2': 
+        try {
+          const orders = await purchaseOrdersModule.getAll(); 
+          console.log('Orders:', orders);
+        } catch (error) {
+          console.log('Error retrieving orders: ' + error.message);
+        }
         break;
 
-        case '3': 
-        const orderId = parseInt(await question('Order ID to be viewed:'));
-        
-        // Validation de l'ID de la commande
-        if (isNaN(orderId) || orderId <= 0) {
-          console.log('Invalid order ID. Please provide a valid order ID.');
-          break;
-        }
-      
-        const order = await purchaseOrdersModule.getById(orderId);
-        console.log(order ? 'Order:' : 'No orders found.', order);
-        break;
-      
+      case '3': 
+            try {
+                const orderId = parseInt(await question('Order ID to be viewed:'));
+
+                // Ensure the ID is valid before attempting to retrieve the order
+                if (isNaN(orderId) || orderId <= 0) {
+                    console.log('Invalid order ID. Please provide a valid order ID.');
+                    break;
+                }
+
+                const order = await purchaseOrdersModule.getById(orderId);
+                console.log(order ? 'Order:' : 'No orders found.', order);
+            } catch (error) {
+                // Catch errors and display only the clean message
+                console.log(error.message); // Display user-friendly message only
+            }
+            break;
+
       case '4': // Edit an order
-        const orderIdUpdate = await question('The ID of the command to be modified: ');
-        // Validation de l'ID de la commande
-  if (isNaN(orderIdUpdate) || orderIdUpdate <= 0) {
-    console.log('Invalid order ID. Please provide a valid order ID.');
-    break;
-  }
-
-        let updatedOrderData = await getPurchaseOrderInput();
-
-
-        let editingDetails = true;
-        while (editingDetails) {
-          
-          console.log('\n--- Edit Order Details ---');
-          console.log('1. View current details');
-          console.log('2. Add a new order detail');
-          console.log('3. Edit an existing detail');
-          console.log('4. Save changes and exit');
-          console.log('5. Cancel changes and exit');
-          
-
-          const detailChoice = await question('Choose an option :');
-
-          switch (detailChoice) {
-            case '1': // View current order details
-              const currentDetails = await purchaseOrdersModule.getOrderDetails(orderIdUpdate);
-              console.log('Current order details :', currentDetails);
-              break;
-
-            case '2': // Add new order detai
-              const newDetail = await getOrderDetailInput(orderIdUpdate);
-              if (newDetail) {
-                if (!updatedOrderData.order_details) {
-                  updatedOrderData.order_details = [];
-                }
-                updatedOrderData.order_details.push(newDetail);
-                console.log('New order detail added.');
-              }
-              break;
-
-            case '3': // Edit an existing detail
-              const detailIdToEdit = await question('ID of the detail to modify: ');
-              const updatedDetail = await getOrderDetailInput(orderIdUpdate);
-              if (updatedDetail) {
-                updatedDetail.id = parseInt(detailIdToEdit);
-                if (!updatedOrderData.order_details) {
-                  updatedOrderData.order_details = [];
-                }
-                updatedOrderData.order_details.push(updatedDetail);
-                console.log('Order detail updated.');
-              }
-              break;
-
-            case '4': // Save the changes
-              editingDetails = false;
-              break;
-
-            case '5': // Exit without saving
-              editingDetails = false;
-              updatedOrderData = null; // Undo changes
-              break;
-
-            default:
-              console.log('Invalid option. Please try again.');
+        try {
+          const orderIdUpdate = await question('The ID of the command to be modified: ');
+          if (isNaN(orderIdUpdate) || orderIdUpdate <= 0) {
+            console.log('Invalid order ID. Please provide a valid order ID.');
+            break;
           }
-        }
 
-        if (updatedOrderData) {
-          try {
+          let updatedOrderData = await getPurchaseOrderInput();
+
+          let editingDetails = true;
+          while (editingDetails) {
+            console.log('\n--- Edit Order Details ---');
+            console.log('1. View current details');
+            console.log('2. Add a new order detail');
+            console.log('3. Edit an existing detail');
+            console.log('4. Save changes and exit');
+            console.log('5. Cancel changes and exit');
+
+            const detailChoice = await question('Choose an option :');
+
+            switch (detailChoice) {
+              case '1': // View current order details
+                const currentDetails = await purchaseOrdersModule.getOrderDetails(orderIdUpdate);
+                console.log('Current order details :', currentDetails);
+                break;
+
+              case '2': // Add new order detail
+                const newDetail = await getOrderDetailInput(orderIdUpdate);
+                if (newDetail) {
+                  if (!updatedOrderData.order_details) {
+                    updatedOrderData.order_details = [];
+                  }
+                  updatedOrderData.order_details.push(newDetail);
+                  console.log('New order detail added.');
+                }
+                break;
+
+              case '3': // Edit an existing detail
+                const detailIdToEdit = await question('ID of the detail to modify: ');
+                const updatedDetail = await getOrderDetailInput(orderIdUpdate);
+                if (updatedDetail) {
+                  updatedDetail.id = parseInt(detailIdToEdit);
+                  if (!updatedOrderData.order_details) {
+                    updatedOrderData.order_details = [];
+                  }
+                  updatedOrderData.order_details.push(updatedDetail);
+                  console.log('Order detail updated.');
+                }
+                break;
+
+              case '4': // Save the changes
+                editingDetails = false;
+                break;
+
+              case '5': // Exit without saving
+                editingDetails = false;
+                updatedOrderData = null; // Undo changes
+                break;
+
+              default:
+                console.log('Invalid option. Please try again.');
+            }
+          }
+
+          if (updatedOrderData) {
             const updatedOrder = await purchaseOrdersModule.update(parseInt(orderIdUpdate), updatedOrderData);
             console.log('Order updated successfully.');
-          } catch (error) {
-            console.error('Error while updating the command :', error.message);
+          } else {
+            console.log('Change of cancelled order.');
           }
-        } else {
-          console.log('Change of cancelled order.');
+        } catch (error) {
+          console.log('Error while updating the command: ' + error.message);
         }
         break;
 
-      case '5':
-        case '5':
-          const orderIdDelete = parseInt(await question('ID of the order to delete: '));
-          
-          // Validation de l'ID de la commande
+      case '5': 
+        try {
+          const orderIdDelete = parseInt(await question('ID of the order to delete:'));
           if (isNaN(orderIdDelete) || orderIdDelete <= 0) {
             console.log('Invalid order ID. Please provide a valid order ID.');
             break;
           }
-        
           const deletedOrder = await purchaseOrdersModule.delete(orderIdDelete);
           console.log(deletedOrder > 0 ? 'Order successfully deleted.' : 'No order found.');
-          break;
-        
+        } catch (error) {
+          console.log('Error deleting order: ' + error.message);
+        }
+        break;
+
       case '6': 
         orderManaging = false;
         break;
@@ -532,7 +536,7 @@ async function handlePayments() {
             const updatedPayment = await paymentsModule.update(parseInt(paymentIdUpdate), updatedPaymentData);
             console.log(updatedPayment > 0 ? 'Payment successfully updated.' : 'No payment found.');
           } catch (error) {
-            console.log('An error occurred:', error.message);  // Affiche uniquement le message d'erreur
+            console.log('An error occurred:', error.message); // Displays only the error message
           }
           break;
         case '5':
@@ -547,7 +551,7 @@ async function handlePayments() {
           console.log('Invalid option. Please try again.');
       }
     } catch (error) {
-      console.log('An error occurred:', error.message);  // N'affiche que le message d'erreur
+      console.log('An error occurred:', error.message);  // Only displays the error message
     }
   }
 }

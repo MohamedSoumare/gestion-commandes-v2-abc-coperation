@@ -1,6 +1,6 @@
 const cnx = require('../database/db');
 
-const purchaseOrdersModule = {
+const purchaseOrderModule = {
   async getAll() {
     try {
       const [rows] = await cnx.query('SELECT * FROM purchase_orders');
@@ -13,28 +13,40 @@ const purchaseOrdersModule = {
 
   async getById(id) {
     try {
-      // Vérifiez si l'ID est bien un nombre avant de procéder
-      if (isNaN(id)) {
-        throw new Error(`Invalid customer ID: ${id}. ID must be a number.`);
-      }
-  
-      const [orderRows] = await cnx.query('SELECT * FROM purchase_orders WHERE id = ?', [id]);
-  
-      if (orderRows.length === 0) {
-        throw new Error(`Purchase order with ID ${id} not found.`);
-      }
-  
-      const order = orderRows[0];
-  
-      const [detailsRows] = await cnx.query('SELECT * FROM order_details WHERE order_id = ?', [id]);
-      order.order_details = detailsRows;
-  
-      return order;
+        // Check if the ID is a valid number
+        if (isNaN(id)) {
+            throw new Error(`Invalid purchase order ID: ${id}. ID must be a number.`);
+        }
+
+        // Query the purchase_orders table to find the order by ID
+        const [orderRows] = await cnx.query('SELECT * FROM purchase_orders WHERE id = ?', [id]);
+
+        // Check if the purchase order was found
+        if (orderRows.length === 0) {
+            throw new Error(`Purchase order with ID ${id} not found.`);
+        }
+
+        // Extract the order from the result set
+        const order = orderRows[0];
+
+        // Query the order_details table to retrieve the details for the specific order
+        const [detailsRows] = await cnx.query('SELECT * FROM order_details WHERE order_id = ?', [id]);
+        
+        // Attach the order details to the main order object
+        order.order_details = detailsRows;
+
+        // Return the final order object with all details
+        return order;
+
     } catch (error) {
-      console.error(`Error retrieving purchase order with ID ${id}:`, error);
-      throw new Error(`Unable to retrieve purchase order with ID ${id}.`);
+        // Log the detailed error internally for debugging purposes
+        console.error(`Error retrieving purchase order with ID ${id}: ${error.message}`);
+
+        // Throw a user-friendly message without the error trace
+        throw new Error(`Unable to retrieve purchase order with ID ${id}. Please make sure the ID is correct.`);
     }
-  },  
+},
+
 
   async create(order) {
     try {
@@ -150,22 +162,30 @@ const purchaseOrdersModule = {
   },
 
   async delete(id) {
+    let connection;
     try {
-      // Vérifiez d'abord si le produit existe
-      const [product] = await cnx.query('SELECT id FROM products WHERE id = ?', [id]);
-      if (product.length === 0) {
-        throw new Error(`Product with ID ${id} not found.`);
+      connection = await cnx.getConnection();
+      await connection.beginTransaction();
+
+      // Delete the order details first
+      await connection.query('DELETE FROM order_details WHERE order_id = ?', [id]);
+
+      // Then delete the order itself
+      const [result] = await connection.query('DELETE FROM purchase_orders WHERE id = ?', [id]);
+
+      if (result.affectedRows === 0) {
+        throw new Error(`Purchase order with ID ${id} not found.`);
       }
-  
-      // Si le produit existe, procédez à la suppression
-      const [result] = await cnx.query('DELETE FROM products WHERE id = ?', [id]);
-  
-      return result.affectedRows; // Retourne le nombre de lignes supprimées
+
+      await connection.commit();
+      return result.affectedRows;
     } catch (error) {
-      console.error(`Error deleting product with ID ${id}:`, error);
-      throw new Error(`Unable to delete product with ID ${id}.`);
+      if (connection) await connection.rollback();
+      console.error('Error deleting purchase order:', error.message);
+      throw new Error(`Unable to delete purchase order with ID ${id}.`);
+    } finally {
+      if (connection) connection.release();
     }
   }
-
 }
-module.exports = purchaseOrdersModule;
+module.exports = purchaseOrderModule;

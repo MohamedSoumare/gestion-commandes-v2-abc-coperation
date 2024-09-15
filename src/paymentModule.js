@@ -1,6 +1,6 @@
 const cnx = require('../database/db');
 
-const paymentsModule = {
+const paymentModule = {
   async getAll() {
     try {
       const [rows] = await cnx.query('SELECT * FROM payments');
@@ -34,7 +34,6 @@ const paymentsModule = {
       throw new Error('All fields (date, amount, payment_method, order_id) are required.');
     }
 
-    // Assure-toi que le montant est un nombre valide
     if (isNaN(amount) || amount <= 0) {
       throw new Error('Amount must be a positive number.');
     }
@@ -69,9 +68,9 @@ const paymentsModule = {
         throw new Error(`Payment with ID ${id} not found.`);
       }
 
-      return result.affectedRows; // Retourne le nombre de lignes affectées
+      return result.affectedRows; 
     } catch (error) {
-      console.error(`Error updating payment with ID ${id}:`, error.message);  // Affiche uniquement le message d'erreur
+      console.error(`Error updating payment with ID ${id}:`, error.message);  
       throw new Error(`Unable to update payment with ID ${id}. Please check the input.`);
     }
   },
@@ -84,12 +83,12 @@ const paymentsModule = {
         throw new Error(`Payment with ID ${id} not found.`);
       }
 
-      return result.affectedRows; // Retourne le nombre de lignes affectées
+      return result.affectedRows; 
     } catch (error) {
-      console.error(`Error deleting payment with ID ${id}:`, error.message); // Affiche uniquement le message d'erreur
+      console.error(`Error deleting payment with ID ${id}:`, error.message); // Displays only the error message
       throw new Error(`Unable to delete payment with ID ${id}.`);
     }
   }
 };
 
-module.exports = paymentsModule;
+module.exports = paymentModule;

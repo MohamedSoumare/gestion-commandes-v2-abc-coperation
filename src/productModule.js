@@ -1,6 +1,6 @@
 const cnx = require('../database/db');
 
-const productsModule = {
+const productModule = {
   async getAll() {
     try {
       const [rows] = await cnx.query('SELECT * FROM products');
@@ -36,7 +36,6 @@ const productsModule = {
     try {
       const { name, description, stock, price, category, barcode, status } = product;
   
-      // Validation des champs requis
       if (!name || !description || !stock || !price || !category || !barcode || !status) {
         throw new Error('All fields (name, description, stock, price, category, barcode, status) are required.');
       }
@@ -45,13 +44,13 @@ const productsModule = {
         'INSERT INTO products (name, description, stock, price, category, barcode, status) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [name, description, stock, price, category, barcode, status]
       );
-      return result.insertId; // Renvoie l'ID du produit nouvellement créé
+      return result.insertId; // Returns the newly created product ID
     } catch (error) {
-      // Vérifier si c'est une erreur de validation des champs
+      // Check if it is a field validation error
       if (error.message.includes('All fields')) {
-        throw error;  // Renvoie l'erreur d'origine pour un affichage propre
+        throw error; // Returns the original error for clean display
       } else {
-        // Gérer les autres erreurs en affichant un message générique
+       
         console.error('Error creating product:', error);
         throw new Error('Unable to create product. Please check your input and try again.');
       }
@@ -62,7 +61,7 @@ const productsModule = {
     try {
       const { name, description, stock, price, category, barcode, status } = product;
   
-      // Validation des champs obligatoires
+  
       if (!name || !description || !stock || !price || !category || !barcode || !status) {
         throw new Error('All fields (name, description, stock, price, category, barcode, status) are required.');
       }
@@ -85,17 +84,17 @@ const productsModule = {
 
   async delete(id) {
     try {
-      // Vérifiez si le produit existe
+      // Check if the product exists
       const [product] = await cnx.query('SELECT id FROM products WHERE id = ?', [id]);
       if (product.length === 0) {
         throw new Error(`Product with ID ${id} not found.`);
       }
   
-      // Si le produit existe, procédez à la suppression
+ 
       const [result] = await cnx.query('DELETE FROM products WHERE id = ?', [id]);
-      return result.affectedRows; // Retourne le nombre de lignes supprimées
+      return result.affectedRows; 
     } catch (error) {
-      // Affiche uniquement le message de l'erreur
+      
       console.log(`An error occurred: ${error.message}`);
       throw new Error(`Unable to delete product with ID ${id}.`);
     }
@@ -106,4 +105,4 @@ const productsModule = {
   
 };
 
-module.exports = productsModule;
+module.exports = productModule;

@@ -1,6 +1,6 @@
 const cnx = require('../database/db');
 
-const customersModule = {
+const customerModule = {
 
   async getAll() {
     try {
@@ -60,7 +60,7 @@ async getById(id) {
         // Rethrow the specific error without any modifications
         throw error;
       } else {
-        // Log any other error and throw a generic message
+      
         console.error('Error while creating the customer:', error);
         throw new Error('Unable to create customer. Please check your input and try again.');
       }
@@ -132,4 +132,4 @@ async delete(id) {
 };
 
 
-module.exports = customersModule;
+module.exports = customerModule;
