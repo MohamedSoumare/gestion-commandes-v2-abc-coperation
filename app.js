@@ -1,8 +1,8 @@
 const readline = require('readline');
-const customersModule = require('./src/customerModule');
-const productsModule = require('./src/productModule');
-const purchaseOrdersModule = require('./src/purchaseOrderModule');
-const paymentsModule = require('./src/paymentModule');
+const customerModule = require('./src/customerModule');
+const productModule = require('./src/productModule');
+const purchaseOrderModule = require('./src/purchaseOrderModule');
+const paymentModule = require('./src/paymentModule');
 
 // Input interface to capture user inputs
 const rl = readline.createInterface({
@@ -80,7 +80,7 @@ async function getPurchaseOrderInput() {
 // Function to collect order detail data
 async function getOrderDetailInput(orderId) {
   const product_id = await question('Product ID: ');
-  const product = await productsModule.getById(parseInt(product_id));
+  const product = await productModule.getById(parseInt(product_id));
 
   if (!product) {
     console.log("Product ID not found.");
@@ -124,7 +124,7 @@ async function getPaymentInput() {
       orderId
     };
 
-    await paymentsModule.create(payment);
+    await paymentModule.create(payment);
     console.log('Payment successfully created.');
   } catch (error) {
     console.log('An error occurred:', error.message);
@@ -184,6 +184,7 @@ async function showPaymentMenu() {
 
   const choice = await question('Choose an option: ');
   return choice;
+
 }
 
 // Customer management
@@ -195,27 +196,27 @@ async function handleCustomers() {
       switch (choice) {
         case '1':
           const customerData = await getCustomerInput();
-          await customersModule.create(customerData);
+          await customerModule.create(customerData);
           console.log('Customer successfully added.');
           break;
         case '2':
-          const customers = await customersModule.getAll();
+          const customers = await customerModule.getAll();
           console.log('Customers:', customers);
           break;
         case '3':
           const customerId = await question('ID of the customer to view: ');
-          const customer = await customersModule.getById(parseInt(customerId));
+          const customer = await customerModule.getById(parseInt(customerId));
           customer ? console.log('Customer:', customer) : console.log('No customer found.');
           break;
         case '4':
           const customerIdUpdate = await question('ID of the customer to edit: ');
           const updatedCustomerData = await getCustomerInput();
-          const updatedCustomer = await customersModule.update(parseInt(customerIdUpdate), updatedCustomerData);
+          const updatedCustomer = await customerModule.update(parseInt(customerIdUpdate), updatedCustomerData);
           console.log(updatedCustomer > 0 ? 'Customer successfully updated.' : 'No customer found.');
           break;
         case '5':
           const customerIdDelete = await question('ID of the customer to delete: ');
-          const deletedCustomer = await customersModule.delete(parseInt(customerIdDelete));
+          const deletedCustomer = await customerModule.delete(parseInt(customerIdDelete));
           console.log(deletedCustomer > 0 ? 'Customer successfully deleted.' : 'No customer found.');
           break;
         case '6':
@@ -238,16 +239,16 @@ async function handleProducts() {
     switch (choice) {
       case '1':
         const productData = await getProductInput();
-        await productsModule.create(productData);
+        await productModule.create(productData);
         console.log('Product successfully added.');
         break;
       case '2':
-        const products = await productsModule.getAll();
+        const products = await productModule.getAll();
         console.log('Products:', products);
         break;
         case '3':
           const productIdGet = await question('ID of the product to view: ');
-          const product = await productsModule.getById(parseInt(productIdGet));
+          const product = await productModule.getById(parseInt(productIdGet));
           if (product) {
             console.log('Product:', product);
           } else {
@@ -265,7 +266,7 @@ async function handleProducts() {
                 !updatedProductData.barcode || !updatedProductData.status) {
               console.log('Error: All fields (name, description, stock, price, category, barcode, status) are required.');
             } else {
-              const updatedProduct = await productsModule.update(parseInt(productIdToUpdate), updatedProductData);
+              const updatedProduct = await productModule.update(parseInt(productIdToUpdate), updatedProductData);
               console.log(updatedProduct > 0 ? 'Product successfully updated.' : 'No product found.');
             }
             break;
@@ -273,7 +274,7 @@ async function handleProducts() {
             case '5':
               const productIdDelete = await question('ID of the product to delete: ');
               try {
-                const deletedProduct = await productsModule.delete(parseInt(productIdDelete));
+                const deletedProduct = await productModule.delete(parseInt(productIdDelete));
                 console.log(deletedProduct > 0 ? 'Product successfully deleted.' : 'No product found.');
               } catch (error) {
                 console.log(`An error occurred: ${error.message}`);
@@ -308,7 +309,7 @@ async function handlePurchaseOrders() {
           break;
         }
 
-        const customerExists = await customersModule.getById(orderData.customer_id);
+        const customerExists = await customerModule.getById(orderData.customer_id);
 
         if (!customerExists) {
           console.log('Customer not found. Please first create the customer.');
@@ -341,13 +342,13 @@ async function handlePurchaseOrders() {
               if (currentOrder) {
                 try {
                   // Save the order first
-                  const orderId = await purchaseOrdersModule.create(currentOrder);
+                  const orderId = await purchaseOrderModule.create(currentOrder);
                   console.log('Order successfully saved. ID:', orderId);
 
                   // Save order details in the database
                   for (const detail of orderDetails) {
                     detail.order_id = orderId; // Assign order ID to each detail
-                    await purchaseOrdersModule.addOrderDetail(detail);
+                    await purchaseOrderModule.addOrderDetail(detail);
                   }
                   console.log('Order details saved successfully.');
                 } catch (error) {
@@ -374,7 +375,7 @@ async function handlePurchaseOrders() {
 
       case '2': 
         try {
-          const orders = await purchaseOrdersModule.getAll(); 
+          const orders = await purchaseOrderModule.getAll(); 
           console.log('Orders:', orders);
         } catch (error) {
           console.log('Error retrieving orders: ' + error.message);
@@ -391,7 +392,7 @@ async function handlePurchaseOrders() {
                     break;
                 }
 
-                const order = await purchaseOrdersModule.getById(orderId);
+                const order = await purchaseOrderModule.getById(orderId);
                 console.log(order ? 'Order:' : 'No orders found.', order);
             } catch (error) {
                 // Catch errors and display only the clean message
@@ -422,7 +423,7 @@ async function handlePurchaseOrders() {
 
             switch (detailChoice) {
               case '1': // View current order details
-                const currentDetails = await purchaseOrdersModule.getOrderDetails(orderIdUpdate);
+                const currentDetails = await purchaseOrderModule.getOrderDetails(orderIdUpdate);
                 console.log('Current order details :', currentDetails);
                 break;
 
@@ -465,7 +466,7 @@ async function handlePurchaseOrders() {
           }
 
           if (updatedOrderData) {
-            const updatedOrder = await purchaseOrdersModule.update(parseInt(orderIdUpdate), updatedOrderData);
+            const updatedOrder = await purchaseOrderModule.update(parseInt(orderIdUpdate), updatedOrderData);
             console.log('Order updated successfully.');
           } else {
             console.log('Change of cancelled order.');
@@ -482,7 +483,7 @@ async function handlePurchaseOrders() {
             console.log('Invalid order ID. Please provide a valid order ID.');
             break;
           }
-          const deletedOrder = await purchaseOrdersModule.delete(orderIdDelete);
+          const deletedOrder = await purchaseOrderModule.delete(orderIdDelete);
           console.log(deletedOrder > 0 ? 'Order successfully deleted.' : 'No order found.');
         } catch (error) {
           console.log('Error deleting order: ' + error.message);
@@ -508,17 +509,17 @@ async function handlePayments() {
       switch (choice) {
         case '1':
           const paymentData = await getPaymentInput();
-          await paymentsModule.create(paymentData);
+          await paymentModule.create(paymentData);
           console.log('Payment successfully added.');
           break;
         case '2':
-          const payments = await paymentsModule.getAll();
+          const payments = await paymentModule.getAll();
           console.log('Payments:', payments);
           break;
           case '3':
             const paymentIdGet = await question('ID of the payment to view: ');
             try {
-              const payment = await paymentsModule.getById(parseInt(paymentIdGet));
+              const payment = await paymentModule.getById(parseInt(paymentIdGet));
               if (payment) {
                 console.log('Payment:', payment);
               } else {
@@ -533,7 +534,7 @@ async function handlePayments() {
           const paymentIdUpdate = await question('ID of the payment to edit: ');
           try {
             const updatedPaymentData = await getPaymentInput();
-            const updatedPayment = await paymentsModule.update(parseInt(paymentIdUpdate), updatedPaymentData);
+            const updatedPayment = await paymentModule.update(parseInt(paymentIdUpdate), updatedPaymentData);
             console.log(updatedPayment > 0 ? 'Payment successfully updated.' : 'No payment found.');
           } catch (error) {
             console.log('An error occurred:', error.message); // Displays only the error message
@@ -541,7 +542,7 @@ async function handlePayments() {
           break;
         case '5':
           const paymentIdDelete = await question('ID of the payment to delete: ');
-          const deletedPayment = await paymentsModule.delete(parseInt(paymentIdDelete));
+          const deletedPayment = await paymentModule.delete(parseInt(paymentIdDelete));
           console.log(deletedPayment > 0 ? 'Payment successfully deleted.' : 'No payment found.');
           break;
         case '6':

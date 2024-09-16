@@ -50,27 +50,28 @@ const purchaseOrderModule = {
 
 async create(order) {
   try {
-      // Check if the track_number already exists
-      const [existingTrack] = await cnx.query(
-          'SELECT id FROM purchase_orders WHERE track_number = ?',
-          [order.track_number]
-      );
-      
-      if (existingTrack.length > 0) {
-          throw new Error(`Track number ${order.track_number} already exists. Please provide a unique track number.`);
-      }
-      
-      // Check if customer exists
-      const [customerRows] = await cnx.query('SELECT id FROM customers WHERE id = ?', [order.customer_id]);
-      if (customerRows.length === 0) {
-          throw new Error(`Customer with ID ${order.customer_id} does not exist.`);
-      }
+        // Check if the track_number already exists
+        const [existingTrack] = await cnx.query(
+            'SELECT id FROM purchase_orders WHERE track_number = ?',
+            [order.track_number]
+        );
+        
+        if (existingTrack.length > 0) {
+            throw new Error(`Track number ${order.track_number} already exists. Please provide a unique track number.`);
+        }
+        
+        // Check if customer exists
+        const [customerRows] = await cnx.query('SELECT id FROM customers WHERE id = ?', [order.customer_id]);
+        
+        if (customerRows.length === 0) {
+            throw new Error(`Customer with ID ${order.customer_id} does not exist.`);
+        }
 
-      // Insert the purchase order
-      const [result] = await cnx.query(
-          'INSERT INTO purchase_orders (date, customer_id, delivery_address, track_number, status) VALUES (?, ?, ?, ?, ?)',
-          [order.date, order.customer_id, order.delivery_address, order.track_number, order.status]
-      );
+        // Insert the purchase order
+        const [result] = await cnx.query(
+            'INSERT INTO purchase_orders (date, customer_id, delivery_address, track_number, status) VALUES (?, ?, ?, ?, ?)',
+            [order.date, order.customer_id, order.delivery_address, order.track_number, order.status]
+        );
 
       return result.insertId;
   } catch (error) {

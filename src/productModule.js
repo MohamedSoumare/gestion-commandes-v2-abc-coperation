@@ -9,8 +9,9 @@ const productModule = {
       console.error('Error retrieving products:', error);
       throw new Error('Unable to retrieve products. Please try again later.');
     }
-  },
-  async getById(id) {
+},
+
+async getById(id) {
     try {
       // Validate ID
       if (isNaN(id)) {
@@ -29,7 +30,7 @@ const productModule = {
       console.error(`Error retrieving product with ID ${id}:`, error);
       throw new Error(`Unable to retrieve product with ID ${id}.`);
     }
-  },  
+},  
 
   async create(product) {
     try {
@@ -45,6 +46,7 @@ const productModule = {
         'SELECT * FROM products WHERE barcode = ?',
         [barcode]
       );
+
       if (existingProduct.length > 0) {
         throw new Error('Barcode already exists. Please use a unique barcode.');
       }
@@ -56,6 +58,7 @@ const productModule = {
       );
       return result.insertId; // Returns the newly created product ID
   
+
     } catch (error) {
       if (error.message.includes('All fields') || error.message.includes('Barcode already exists')) {
         throw error; // Returns the original error for clean display
@@ -64,9 +67,10 @@ const productModule = {
         throw new Error('Unable to create product. Please check your input and try again.');
       }
     }
-  },  
+},  
   
   async update(id, product) {
+    
     try {
       const { name, description, stock, price, category, barcode, status } = product;
   
@@ -80,6 +84,7 @@ const productModule = {
         'SELECT * FROM products WHERE barcode = ? AND id != ?',
         [barcode, id]
       );
+      
       if (existingProduct.length > 0) {
         throw new Error('Barcode already exists. Please use a unique barcode.');
       }
@@ -124,8 +129,6 @@ const productModule = {
     }
     
   }
-  
-  
   
 };
 
