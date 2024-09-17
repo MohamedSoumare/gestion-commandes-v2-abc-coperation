@@ -41,7 +41,6 @@ const purchaseOrderModule = {
     } catch (error) {
         // Log the detailed error internally for debugging purposes
         console.error(`Error retrieving purchase order with ID ${id}: ${error.message}`);
-
         // Throw a user-friendly message without the error trace
         throw new Error(`Unable to retrieve purchase order with ID ${id}. Please make sure the ID is correct.`);
     }
@@ -50,86 +49,126 @@ const purchaseOrderModule = {
 
 async create(order) {
   try {
-        // Check if the track_number already exists
-        const [existingTrack] = await cnx.query(
-            'SELECT id FROM purchase_orders WHERE track_number = ?',
-            [order.track_number]
-        );
-        
-        if (existingTrack.length > 0) {
-            throw new Error(`Track number ${order.track_number} already exists. Please provide a unique track number.`);
-        }
-        
-        // Check if customer exists
-        const [customerRows] = await cnx.query('SELECT id FROM customers WHERE id = ?', [order.customer_id]);
-        
-        if (customerRows.length === 0) {
-            throw new Error(`Customer with ID ${order.customer_id} does not exist.`);
-        }
+      // Validation : Vérifier si tous les champs sont remplis
+      if (!order.date || !order.customer_id || !order.delivery_address || !order.track_number || !order.status) {
+          throw new Error('All fields are required. Please fill in all fields.');
+      }
 
-        // Insert the purchase order
-        const [result] = await cnx.query(
-            'INSERT INTO purchase_orders (date, customer_id, delivery_address, track_number, status) VALUES (?, ?, ?, ?, ?)',
-            [order.date, order.customer_id, order.delivery_address, order.track_number, order.status]
-        );
+      // Validation : Vérifier si le customer_id est un nombre
+      if (isNaN(order.customer_id)) {
+          throw new Error('Invalid client ID. Please enter a valid client ID.');
+      }
 
-      return result.insertId;
+      // Vérifier si le client existe
+      const [customerRows] = await cnx.query('SELECT id FROM customers WHERE id = ?', [order.customer_id]);
+
+      if (customerRows.length === 0) {
+          // Client n'existe pas
+          throw new Error('The customer does not exist. Please provide a valid customer ID.');
+      }
+
+      // Insérer la commande
+      const [result] = await cnx.query(
+          'INSERT INTO purchase_orders (date, customer_id, delivery_address, track_number, status) VALUES (?, ?, ?, ?, ?)',
+          [order.date, order.customer_id, order.delivery_address, order.track_number, order.status]
+      );
+
+      return result.insertId; // Retourner l'ID de la commande créée
   } catch (error) {
-      console.error('Error creating purchase order:', error.message);
-      throw new Error('Unable to create purchase order. Please check your input and try again.');
+      // Afficher un message d'erreur sans trace
+      if (error.message.includes('does not exist')) {
+          console.log(error.message); // Affiche un message utilisateur simple
+      } else {
+          console.error('Error when creating the order:', error.message); // Pour le débogage interne
+      }
+      throw new Error('Unable to create order. Please check your data and try again.');
   }
 },
   
-  async addOrderDetail(orderDetail) {
-    try {
-      const [result] = await cnx.query(
-        'INSERT INTO order_details (product_id, quantity, price, order_id) VALUES (?, ?, ?, ?)',
-        [orderDetail.product_id, orderDetail.quantity, orderDetail.price, orderDetail.order_id]
-      );
-      return result.insertId; // Returns the newly inserted order detail ID
-    } catch (error) {
-      console.error('Error adding order detail:', error);
-      throw new Error('Unable to add order detail. Please check your input and try again.');
+async addOrderDetail(orderDetail) {
+  let connection;
+  try {
+    connection = await cnx.getConnection();
+    await connection.beginTransaction();
+
+    // Vérifier si le produit existe
+    const [productRows] = await connection.query(
+      'SELECT id FROM products WHERE id = ?',
+      [orderDetail.product_id]
+    );
+    if (productRows.length === 0) {
+      throw new Error(`Product with ID ${orderDetail.product_id} does not exist.`);
     }
-  },
 
-  async update(id, order) {
-    let connection;
-    try {
-        connection = await cnx.getConnection();
-        await connection.beginTransaction();
+    // Insérer les détails de la commande
+    const [result] = await connection.query(
+      'INSERT INTO order_details (product_id, quantity, price, order_id) VALUES (?, ?, ?, ?)',
+      [orderDetail.product_id, orderDetail.quantity, orderDetail.price, orderDetail.order_id]
+    );
 
-        // Check if the new track_number is already in use by another order
-        const [existingTrack] = await connection.query(
-            'SELECT id FROM purchase_orders WHERE track_number = ? AND id != ?',
-            [order.track_number, id]
-        );
+    await connection.commit();
+    return result.insertId; // Return the ID of the newly inserted order detail
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error('Error adding order detail:', error);
+    throw new Error('Unable to add order detail. Please check your input and try again.');
+  } finally {
+    if (connection) connection.release();
+  }
+},
+async update(id, order) {
+  let connection;
+  try {
+    connection = await cnx.getConnection();
+    await connection.beginTransaction();
 
-        if (existingTrack.length > 0) {
-            throw new Error(`Track number ${order.track_number} is already used by another order. Please provide a unique track number.`);
-        }
-
-        const { date, customer_id, delivery_address, track_number, status } = order;
-
-        const [result] = await connection.query(
-            'UPDATE purchase_orders SET date = ?, customer_id = ?, delivery_address = ?, track_number = ?, status = ? WHERE id = ?',
-            [date, customer_id, delivery_address, track_number, status, id]
-        );
-
-        if (result.affectedRows === 0) {
-            throw new Error(`Purchase order with ID ${id} not found.`);
-        }
-
-       
-        await connection.commit();
-        return result.affectedRows;
-    } catch (error) {
-        if (connection) await connection.rollback();
-        console.error(`Error updating purchase order with ID ${id}:`, error.message);
-        throw new Error(`Unable to update purchase order with ID ${id}. Please check your input.`);
-    } finally {
-        if (connection) connection.release();
+    // Vérifier si l'ID est un nombre valide
+    if (isNaN(id)) {
+      throw new Error('Invalid order ID. Please provide a valid numeric ID.');
     }
+
+    // Vérifier si la commande existe
+    const [existingOrder] = await connection.query(
+      'SELECT id FROM purchase_orders WHERE id = ?',
+      [id]
+    );
+
+    if (existingOrder.length === 0) {
+      throw new Error(`Purchase order with ID ${id} not found.`);
+    }
+
+    // Vérifier si le nouveau numéro de suivi (track_number) est déjà utilisé par une autre commande
+    const [existingTrack] = await connection.query(
+      'SELECT id FROM purchase_orders WHERE track_number = ? AND id != ?',
+      [order.track_number, id]
+    );
+
+    if (existingTrack.length > 0) {
+      throw new Error(`Track number ${order.track_number} is already used by another order. Please provide a unique track number.`);
+    }
+
+    const { date, customer_id, delivery_address, track_number, status } = order;
+
+    // Mise à jour de la commande dans la base de données
+    const [result] = await connection.query(
+      'UPDATE purchase_orders SET date = ?, customer_id = ?, delivery_address = ?, track_number = ?, status = ? WHERE id = ?',
+      [date, customer_id, delivery_address, track_number, status, id]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new Error(`Purchase order with ID ${id} not found.`);
+    }
+
+    await connection.commit();
+    console.log(`Purchase order with ID ${id} updated successfully.`);
+    return result.affectedRows;
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error(`Error updating purchase order with ID ${id}:`, error.message);
+    throw new Error(`Unable to update purchase order with ID ${id}. Please check your input.`);
+  } finally {
+    if (connection) connection.release();
+  }
 },
 
   async getOrderDetails(orderId) {
