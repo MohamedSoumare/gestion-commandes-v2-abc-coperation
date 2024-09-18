@@ -42,11 +42,11 @@ const productModule = {
             throw new Error('All fields (name, description, stock, price, category, barcode, status) are required.');
         }
 
-        // Validation: check for name format (no digits allowed)
-        const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;  // Allows alphabetic characters, spaces, apostrophes, and hyphens
-        if (!nameRegex.test(name)) {
-            throw new Error('The name must contain only alphabetic characters (no numbers).');
-        }
+        // // Validation: check for name format (no digits allowed)
+        // const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;  // Allows alphabetic characters, spaces, apostrophes, and hyphens
+        // if (!nameRegex.test(name)) {
+        //     throw new Error('The name must contain only alphabetic characters (no numbers).');
+        // }
 
         // Ensure stock and price are numeric decimal values and not strings
         if (isNaN(stock) || isNaN(price)) {
@@ -92,10 +92,10 @@ async update(id, product) {
         }
 
         // Validation: check for name format (no digits allowed)
-        const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;  // Allows alphabetic characters, spaces, apostrophes, and hyphens
-        if (!nameRegex.test(name)) {
-            throw new Error('The name must contain only alphabetic characters (no numbers).');
-        }
+        // const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;  // Allows alphabetic characters, spaces, apostrophes, and hyphens
+        // if (!nameRegex.test(name)) {
+        //     throw new Error('The name must contain only alphabetic characters (no numbers).');
+        // }
 
         // Ensure stock and price are numeric decimal values and not strings
         if (isNaN(stock) || isNaN(price)) {

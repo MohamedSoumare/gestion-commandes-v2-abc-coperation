@@ -39,10 +39,10 @@
         }
     
         // Validation: check for name format (no digits allowed)
-        const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;  // Allows alphabetic characters, spaces, apostrophes, and hyphens
-        if (!nameRegex.test(customer.name)) {
-          throw new Error('Error: the name must contain only alphabetic characters (no numbers).');
-        }
+        // const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;  // Allows alphabetic characters, spaces, apostrophes, and hyphens
+        // if (!nameRegex.test(customer.name)) {
+        //   throw new Error('Error: the name must contain only alphabetic characters (no numbers).');
+        // }
     
         // Validation: check for valid phone format (digits only)
         const phoneRegex = /^[\d]{1,20}$/;  // Allows only digits, up to 20 characters
@@ -104,11 +104,11 @@
           throw new Error('All fields (name, address, email, phone) are required and cannot be empty.');
         }
     
-        // Validation: check for name format (no digits allowed)
-        const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;
-        if (!nameRegex.test(customer.name)) {
-          throw new Error('Error: the name must contain only alphabetic characters (no numbers).');
-        }
+        // // Validation: check for name format (no digits allowed)
+        // const nameRegex = /^[A-Za-zÀ-ÖØ-öø-ÿ\s'-]+$/;
+        // if (!nameRegex.test(customer.name)) {
+        //   throw new Error('Error: the name must contain only alphabetic characters (no numbers).');
+        // }
     
         // Validation: check for phone format
         const phoneRegex = /^[\d]{1,20}$/;
