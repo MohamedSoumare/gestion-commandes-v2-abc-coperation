@@ -5,7 +5,7 @@ const cnx = mysql.createPool({
   host: 'localhost',
   user: 'root',
   password: 'c22851',
-  database: 'gestion_commandes',
+  database: 'order_mangement',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
