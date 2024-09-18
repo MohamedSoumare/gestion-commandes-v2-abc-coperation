@@ -11,7 +11,7 @@ const purchaseOrderModule = {
     }
   },
 
-  async getById(id) {
+async getById(id) {
     try {
         // Check if the ID is a valid number
         if (isNaN(id)) {
@@ -49,37 +49,35 @@ const purchaseOrderModule = {
 
 async create(order) {
   try {
-      // Validation : Vérifier si tous les champs sont remplis
+     
       if (!order.date || !order.customer_id || !order.delivery_address || !order.track_number || !order.status) {
           throw new Error('All fields are required. Please fill in all fields.');
       }
 
-      // Validation : Vérifier si le customer_id est un nombre
       if (isNaN(order.customer_id)) {
           throw new Error('Invalid client ID. Please enter a valid client ID.');
       }
 
-      // Vérifier si le client existe
+    
       const [customerRows] = await cnx.query('SELECT id FROM customers WHERE id = ?', [order.customer_id]);
 
       if (customerRows.length === 0) {
-          // Client n'existe pas
+         
           throw new Error('The customer does not exist. Please provide a valid customer ID.');
       }
 
-      // Insérer la commande
       const [result] = await cnx.query(
           'INSERT INTO purchase_orders (date, customer_id, delivery_address, track_number, status) VALUES (?, ?, ?, ?, ?)',
           [order.date, order.customer_id, order.delivery_address, order.track_number, order.status]
       );
 
-      return result.insertId; // Retourner l'ID de la commande créée
+      return result.insertId; 
   } catch (error) {
-      // Afficher un message d'erreur sans trace
+     
       if (error.message.includes('does not exist')) {
-          console.log(error.message); // Affiche un message utilisateur simple
+          console.log(error.message); 
       } else {
-          console.error('Error when creating the order:', error.message); // Pour le débogage interne
+          console.error('Error when creating the order:', error.message);
       }
       throw new Error('Unable to create order. Please check your data and try again.');
   }
@@ -91,7 +89,7 @@ async addOrderDetail(orderDetail) {
     connection = await cnx.getConnection();
     await connection.beginTransaction();
 
-    // Vérifier si le produit existe
+  
     const [productRows] = await connection.query(
       'SELECT id FROM products WHERE id = ?',
       [orderDetail.product_id]
@@ -100,7 +98,7 @@ async addOrderDetail(orderDetail) {
       throw new Error(`Product with ID ${orderDetail.product_id} does not exist.`);
     }
 
-    // Insérer les détails de la commande
+   
     const [result] = await connection.query(
       'INSERT INTO order_details (product_id, quantity, price, order_id) VALUES (?, ?, ?, ?)',
       [orderDetail.product_id, orderDetail.quantity, orderDetail.price, orderDetail.order_id]
@@ -122,12 +120,12 @@ async update(id, order) {
     connection = await cnx.getConnection();
     await connection.beginTransaction();
 
-    // Vérifier si l'ID est un nombre valide
+   
     if (isNaN(id)) {
       throw new Error('Invalid order ID. Please provide a valid numeric ID.');
     }
 
-    // Vérifier si la commande existe
+    
     const [existingOrder] = await connection.query(
       'SELECT id FROM purchase_orders WHERE id = ?',
       [id]
@@ -137,7 +135,7 @@ async update(id, order) {
       throw new Error(`Purchase order with ID ${id} not found.`);
     }
 
-    // Vérifier si le nouveau numéro de suivi (track_number) est déjà utilisé par une autre commande
+   
     const [existingTrack] = await connection.query(
       'SELECT id FROM purchase_orders WHERE track_number = ? AND id != ?',
       [order.track_number, id]
@@ -149,7 +147,7 @@ async update(id, order) {
 
     const { date, customer_id, delivery_address, track_number, status } = order;
 
-    // Mise à jour de la commande dans la base de données
+   
     const [result] = await connection.query(
       'UPDATE purchase_orders SET date = ?, customer_id = ?, delivery_address = ?, track_number = ?, status = ? WHERE id = ?',
       [date, customer_id, delivery_address, track_number, status, id]
@@ -171,7 +169,7 @@ async update(id, order) {
   }
 },
 
-  async getOrderDetails(orderId) {
+async getOrderDetails(orderId) {
     try {
       const [rows] = await cnx.query('SELECT * FROM order_details WHERE order_id = ?', [orderId]);
       return rows;
@@ -182,7 +180,7 @@ async update(id, order) {
   },
 
 
-  async updateOrderDetail(detailId, order) {
+async updateOrderDetail(detailId, order) {
     try {
       const [result] = await cnx.query(
         'UPDATE order_details SET product_id = ?, quantity = ?, price = ? WHERE id = ?',
@@ -196,7 +194,7 @@ async update(id, order) {
       console.error(`Error updating order detail with ID ${detailId}:`, error);
       throw new Error(`Unable to update order detail with ID ${detailId}. Please check your input.`);
     }
-  },
+},
 
 async delete(id) {
     let connection;

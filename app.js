@@ -78,7 +78,7 @@ async function getPurchaseOrderInput() {
 }
 
 // Function to collect order detail data
-async function getOrderDetailInput(orderId) {
+async function getOrderDetailInput(order_id) {
   const product_id = await question('Product ID: ');
   const product = await productModule.getById(parseInt(product_id));
 
@@ -100,36 +100,40 @@ async function getOrderDetailInput(orderId) {
     quantity: parseInt(quantity), 
     price: parseFloat(product.price), 
     product_id: product.id, 
-    order_id: orderId 
+    order_id: order_id 
   };
 }
 
 // Function to collect payment data
 async function getPaymentInput() {
-  try {
-    const date = await question('Date of payment (YYYY-MM-DD): ');
-    const amount = await question('Amount: ');
-    const paymentMethod = await question('Payment method: ');
-    const orderId = await question('Order ID: ');
+  const date = await question('Date of payment (YYYY-MM-DD): ');
+  const amount = await question('Amount: ');
+  const payment_method = await question('Payment method: ');
+  const order_id = await question('Order ID: ');
 
-    // Validation
-    if (!date || !amount || !paymentMethod || !orderId) {
-      throw new Error('All fields (date, amount, payment_method, order_id) are required.');
-    }
-
-    const payment = {
-      date,
-      amount: parseFloat(amount), 
-      paymentMethod,
-      orderId
-    };
-
-    await paymentModule.create(payment);
-    console.log('Payment successfully created.');
-  } catch (error) {
-    console.log('An error occurred:', error.message);
+  // Validate inputs
+  if (!date || !amount || !payment_method || !order_id) {
+    throw new Error('All fields (date, amount, payment_method, order_id) are required.');
   }
+
+  if (isNaN(amount) || parseFloat(amount) <= 0) {
+    throw new Error('Amount must be a positive number.');
+  }
+
+  if (isNaN(order_id) || parseInt(order_id) <= 0) {
+    throw new Error('Order ID must be a valid positive integer.');
+  }
+
+  return {
+    date,
+    amount: parseFloat(amount),
+    payment_method,
+    order_id: parseInt(order_id)
+  };
+
 }
+
+
 // Submenu to manage customers
 async function showCustomerMenu() {
   console.log('\n--- Customer Menu ---');
@@ -360,12 +364,12 @@ async function handlePurchaseOrders() {
                 if (currentOrder) {
                   try {
                     // Save the order first
-                    const orderId = await purchaseOrderModule.create(currentOrder);
-                    console.log('Order successfully saved. ID:', orderId);
+                    const order_id = await purchaseOrderModule.create(currentOrder);
+                    console.log('Order successfully saved. ID:', order_id);
 
                     // Save order details in the database
                     for (const detail of orderDetails) {
-                      detail.order_id = orderId; // Assign order ID to each detail
+                      detail.order_id = order_id; // Assign order ID to each detail
                       await purchaseOrderModule.addOrderDetail(detail);
                     }
                     console.log('Order details saved successfully.');
@@ -405,15 +409,15 @@ async function handlePurchaseOrders() {
 
       case '3': 
           try {
-            const orderId = parseInt(await question('Order ID to be viewed:'));
+            const order_id = parseInt(await question('Order ID to be viewed:'));
 
             // Ensure the ID is valid before attempting to retrieve the order
-            if (isNaN(orderId) || orderId <= 0) {
+            if (isNaN(order_id) || order_id <= 0) {
               console.log('Invalid order ID. Please provide a valid order ID.');
               break;
             }
 
-            const order = await purchaseOrderModule.getById(orderId);
+            const order = await purchaseOrderModule.getById(order_id);
             console.log(order ? 'Order:' : 'No orders found.', order);
           } catch (error) {
             // Display user-friendly message only
@@ -422,10 +426,10 @@ async function handlePurchaseOrders() {
           break;
       case '4': // Edit an order
       try {
-        const orderIdUpdate = parseInt(await question('The ID of the order to be modified: '));
+        const order_idUpdate = parseInt(await question('The ID of the order to be modified: '));
 
         // Ensure the ID is valid before attempting to retrieve the order
-        if (isNaN(orderIdUpdate) || orderIdUpdate <= 0) {
+        if (isNaN(order_idUpdate) || order_idUpdate <= 0) {
           console.log('Invalid order ID. Please provide a valid order ID.');
           break;
         }
@@ -445,12 +449,12 @@ async function handlePurchaseOrders() {
 
           switch (detailChoice) {
             case '1': // View current order details
-              const currentDetails = await purchaseOrderModule.getOrderDetails(orderIdUpdate);
+              const currentDetails = await purchaseOrderModule.getOrderDetails(order_idUpdate);
               console.log('Current order details:', currentDetails);
               break;
 
             case '2': // Add new order detail
-              const newDetail = await getOrderDetailInput(orderIdUpdate);
+              const newDetail = await getOrderDetailInput(order_idUpdate);
               if (newDetail) {
                 if (!updatedOrderData.order_details) {
                   updatedOrderData.order_details = [];
@@ -462,7 +466,7 @@ async function handlePurchaseOrders() {
 
             case '3': // Edit an existing detail
               const detailIdToEdit = await question('ID of the detail to modify: ');
-              const updatedDetail = await getOrderDetailInput(orderIdUpdate);
+              const updatedDetail = await getOrderDetailInput(order_idUpdate);
               if (updatedDetail) {
                 updatedDetail.id = parseInt(detailIdToEdit);
                 if (!updatedOrderData.order_details) {
@@ -488,7 +492,7 @@ async function handlePurchaseOrders() {
         }
 
         if (updatedOrderData) {
-          await purchaseOrderModule.update(parseInt(orderIdUpdate), updatedOrderData);
+          await purchaseOrderModule.update(parseInt(order_idUpdate), updatedOrderData);
           console.log('Order updated successfully.');
         } else {
           console.log('Changes cancelled.');
@@ -500,12 +504,12 @@ async function handlePurchaseOrders() {
 
     case '5': // Delete an order
       try {
-        const orderIdDelete = parseInt(await question('ID of the order to delete:'));
-        if (isNaN(orderIdDelete) || orderIdDelete <= 0) {
+        const order_idDelete = parseInt(await question('ID of the order to delete:'));
+        if (isNaN(order_idDelete) || order_idDelete <= 0) {
           console.log('Invalid order ID. Please provide a valid order ID.');
           break;
         }
-        const deletedOrder = await purchaseOrderModule.delete(orderIdDelete);
+        const deletedOrder = await purchaseOrderModule.delete(order_idDelete);
         console.log(deletedOrder > 0 ? 'Order successfully deleted.' : 'No order found.');
       } catch (error) {
         console.log('Error deleting order: ' + error.message);
@@ -529,42 +533,45 @@ async function handlePayments() {
     try {
       switch (choice) {
         case '1':
-          const paymentData = await getPaymentInput();
-          await paymentModule.create(paymentData);
-          console.log('Payment successfully added.');
+          try {
+            const paymentData = await getPaymentInput();
+            await paymentModule.create(paymentData);
+            console.log('Payment successfully added.');
+          } catch (error) {
+            console.log('An error occurred while adding payment:', error.message);
+          }
           break;
         case '2':
           const payments = await paymentModule.getAll();
           console.log('Payments:', payments);
           break;
-          case '3':
-            const paymentIdGet = await question('ID of the payment to view: ');
-            try {
-              const payment = await paymentModule.getById(parseInt(paymentIdGet));
-              if (payment) {
-                console.log('Payment:', payment);
-              } else {
-                console.log(`No payment found with ID ${paymentIdGet}`);
-              }
-            } catch (error) {
-              console.log('An error occurred:', error.message); 
-            }
-            break;
-          
-          case '4':
+        case '3':
+          const paymentIdGet = await question('ID of the payment to view: ');
+          try {
+            const payment = await paymentModule.getById(parseInt(paymentIdGet));
+            console.log('Payment:', payment);
+          } catch (error) {
+            console.log('An error occurred while retrieving payment:', error.message);
+          }
+          break;
+        case '4':
           const paymentIdUpdate = await question('ID of the payment to edit: ');
           try {
             const updatedPaymentData = await getPaymentInput();
             const updatedPayment = await paymentModule.update(parseInt(paymentIdUpdate), updatedPaymentData);
             console.log(updatedPayment > 0 ? 'Payment successfully updated.' : 'No payment found.');
           } catch (error) {
-            console.log('An error occurred:', error.message); // Displays only the error message
+            console.log('An error occurred while updating payment:', error.message);
           }
           break;
         case '5':
           const paymentIdDelete = await question('ID of the payment to delete: ');
-          const deletedPayment = await paymentModule.delete(parseInt(paymentIdDelete));
-          console.log(deletedPayment > 0 ? 'Payment successfully deleted.' : 'No payment found.');
+          try {
+            const deletedPayment = await paymentModule.delete(parseInt(paymentIdDelete));
+            console.log(deletedPayment > 0 ? 'Payment successfully deleted.' : 'No payment found.');
+          } catch (error) {
+            console.log('An error occurred while deleting payment:', error.message);
+          }
           break;
         case '6':
           paymentManaging = false;
@@ -573,11 +580,10 @@ async function handlePayments() {
           console.log('Invalid option. Please try again.');
       }
     } catch (error) {
-      console.log('An error occurred:', error.message);  // Only displays the error message
+      console.log('An unexpected error occurred:', error.message);
     }
   }
 }
-
 
 
 async function main() {
